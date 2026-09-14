@@ -63,7 +63,7 @@ Considere `STATUS.md` como a fonte do estado técnico atual, `DECISIONS.md` como
 Para preparar um novo dispositivo, instale o Termux e o Termux:API pela mesma origem. Abra o Termux e cole este comando único:
 
 ```bash
-pkg update -y; pkg install -y curl; curl -fL --retry 3 https://raw.githubusercontent.com/duducel204/manuss/main/termux/bootstrap.sh | bash
+pkg update -y && pkg install -y curl && curl -fL --retry 3 https://raw.githubusercontent.com/duducel204/manuss/main/termux/bootstrap.sh | bash
 ```
 
 Esse bootstrap baixa o instalador principal e prepara automaticamente pacotes, Python, ambiente virtual, whisper.cpp, modelo, wizard e `SSSystem`. Como alternativa, copie `termux/install.sh` para a HOME do Termux e execute:
@@ -235,3 +235,45 @@ Faça um único experimento pequeno.
 Registre o resultado.
 Só então proponha o próximo passo.
 ```
+
+## Protocolo de leitura para uma nova IA
+
+Uma IA que receber apenas este repositório deve começar pelo `README.md`, sem presumir que o histórico da conversa esteja disponível. Em seguida, deve ler `BLUEPRINT.md` para entender o produto e sua arquitetura, `DECISIONS.md` para separar decisões confirmadas de sugestões, `STATUS.md` para saber o que foi efetivamente testado, `CHECKLIST.md` para escolher uma única próxima ação, `DECISIONS-OPEN.md` para conhecer as incertezas e `TROUBLESHOOTING.md` antes de diagnosticar qualquer falha.
+
+Depois da leitura, a IA deve executar somente verificações não destrutivas:
+
+```bash
+git status --short --branch
+find . -maxdepth 2 -type f -not -path './.git/*' | sort
+for f in termux/*.sh; do bash -n "$f" || exit 1; done
+```
+
+O significado dos arquivos é deliberadamente separado. `STATUS.md` descreve fatos observados; `DECISIONS.md` descreve escolhas já feitas; `DECISIONS-OPEN.md` contém alternativas não validadas. Uma proposta encontrada no blueprint ou em uma anotação não deve ser tratada como código pronto.
+
+Antes de modificar código, a IA deve localizar a função existente no `termux/wizard.sh` ou no `termux/install.sh`. Deve preferir uma alteração pequena e centralizada, não criar scripts paralelos para corrigir o mesmo problema. Após qualquer teste, deve registrar o resultado no arquivo apropriado e verificar `git diff --check` e `bash -n`.
+
+## Instalação online em um Termux vazio
+
+O fluxo foi projetado para um usuário que ainda não tem Python, Git, FFmpeg ou os arquivos do projeto dentro do Termux. O usuário precisa instalar manualmente apenas os aplicativos **Termux** e **Termux:API**, preferencialmente pela mesma origem, e abrir o Termux. A permissão do microfone continua sendo uma confirmação do Android e não pode ser concedida silenciosamente por um shell script.
+
+Com conexão à internet, o usuário cola um único comando:
+
+```bash
+pkg update -y && pkg install -y curl && curl -fL --retry 3 https://raw.githubusercontent.com/duducel204/manuss/main/termux/bootstrap.sh | bash
+```
+
+O `bootstrap.sh` verifica se está dentro do Termux, atualiza o índice, instala `curl`, baixa a versão correspondente de `install.sh` e a executa. O instalador principal então instala os pacotes de sistema, cria `~/tradutor-local`, cria o ambiente Python, clona e compila o `whisper.cpp`, baixa o modelo `base`, cria os atalhos, baixa o wizard e configura `SSSystem`.
+
+Quando terminar, o usuário executa:
+
+```bash
+SSSystem
+```
+
+O instalador não instala uma tradução online e não tenta resolver Argos/CTranslate2 automaticamente. Isso é intencional: a tradução offline ainda não foi validada neste ambiente e uma tentativa anterior provocou instalação pesada, tentativa de PyQt5 e encerramento do Termux por memória. O primeiro resultado esperado da instalação é o funcionamento de:
+
+```text
+microfone real → arquivo M4A finalizado → FFmpeg → Whisper → texto em português
+```
+
+Se a instalação falhar, o usuário deve reabrir o Termux, executar `SSSystem` se ele já existir e escolher **Suporte e solução de erros**. Não deve apagar `~/tradutor-local` nem repetir uma instalação pesada antes de consultar `TROUBLESHOOTING.md`.

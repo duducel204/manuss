@@ -5,7 +5,7 @@
 O usuário precisa instalar manualmente apenas dois aplicativos pela mesma origem: **Termux** e **Termux:API**. Depois de abrir o Termux pela primeira vez, ele pode colar este comando único:
 
 ```bash
-pkg update -y; pkg install -y curl; curl -fL --retry 3 https://raw.githubusercontent.com/duducel204/manuss/main/termux/bootstrap.sh | bash
+pkg update -y && pkg install -y curl && curl -fL --retry 3 https://raw.githubusercontent.com/duducel204/manuss/main/termux/bootstrap.sh | bash
 ```
 
 O bootstrap instala o `curl`, baixa o instalador principal e executa todo o processo. A partir daí, o instalador prepara pacotes do Termux, Python, ambiente virtual, whisper.cpp, modelo Whisper, wizard e o comando `SSSystem`.
