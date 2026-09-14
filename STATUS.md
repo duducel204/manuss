@@ -29,3 +29,4 @@
 - O Termux:API captura o microfone Android, mas não oferece o controle de múltiplas entradas esperado para a versão futura no Windows.
 - Argos Translate pode ser importado, mas a tradução não funciona sem CTranslate2, que não está disponível no Termux/Python atual.
 - Não versionar modelos, áudios, caches, tokens ou credenciais.
+- Experimento de maior risco pendente: validar `llama.cpp` + modelo GGUF pequeno em Android/Termux real. Nenhuma integração foi implementada.

@@ -11,3 +11,7 @@
 - [ ] Avaliar RTranslator como experimento Android separado.
 - [ ] Criar mock local de entrega.
 - [ ] Só depois iniciar levantamento técnico da API oficial da Kick.
+- [ ] Testar `llama.cpp` isoladamente no Termux com um GGUF pequeno, antes de escrever integração de produto.
+- [ ] Registrar o resultado do teste de `llama.cpp` em `STATUS.md`, incluindo sucesso ou erro completo.
+- [ ] Só após aprovação do motor: implementar glossário com variações explícitas e função isolada `traduzir(texto) -> texto`.
+- [ ] Só após validar a função isolada: adicionar uma opção independente ao `wizard.sh`.
