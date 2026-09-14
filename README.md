@@ -94,7 +94,8 @@ No menu, a sequência recomendada é:
 3. Preparar Whisper e modelo, se necessário
 4. Gravar áudio real
 5. Transcrever o último áudio
-6. Tentar tradução somente se houver um motor compatível
+6. Verificar tradução somente se houver um motor compatível
+7. Usar o suporte integrado em caso de erro
 ```
 
 O primeiro critério de sucesso é obter uma frase correta em português no terminal. Se a gravação gerar `moov atom not found`, o arquivo foi lido antes de ser finalizado; a captura deve usar `termux-microphone-record -q` antes da validação com `ffprobe`.

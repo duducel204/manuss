@@ -28,6 +28,8 @@ Copie `wizard.sh` para a HOME como `wizard_tradutor_termux.sh` e execute-o. O wi
 
 O comando `SSSystem` é opcional e pode ser configurado pelo script `setup_command.sh` depois que o wizard estiver na HOME.
 
+Se ocorrer um erro, escolha no wizard a opção **Suporte e solução de erros**. Ela oferece diagnóstico automático e orientações para microfone, gravação curta, `moov atom not found`, Whisper, falta de memória, CTranslate2 e `SSSystem`.
+
 ## Cuidados
 
 Não versionar modelos, áudios, resultados, caches, tokens ou credenciais. O instalador deve ser revisado antes de ser usado em outro dispositivo, pois versões do Termux, Android, arquitetura e memória podem variar.

@@ -91,16 +91,61 @@ translate_latest() {
   warn "Nenhum motor de tradução offline compatível foi validado neste Termux. A tradução permanece pendente; a captura e a transcrição funcionam."
 }
 
+diagnose() {
+  line; echo "DIAGNÓSTICO AUTOMÁTICO"; line
+  echo "HOME: $HOME"
+  echo "Arquitetura: $(uname -m)"
+  echo "Python: $(python --version 2>&1 || echo ausente)"
+  for c in termux-microphone-record ffmpeg ffprobe git cmake; do
+    if command -v "$c" >/dev/null 2>&1; then ok "$c disponível"; else err "$c ausente"; fi
+  done
+  [ -x "$WHISPER" ] && ok "whisper-cli encontrado" || err "whisper-cli ausente"
+  [ -s "$MODEL" ] && ok "modelo base encontrado" || err "modelo base ausente"
+  echo
+  echo "Áudios recentes:"
+  find "$AUDIO_DIR" -maxdepth 1 -type f -printf '%TY-%Tm-%Td %TH:%TM %s bytes %p\n' 2>/dev/null | sort -r | head -n 5 || true
+  echo
+  df -h "$HOME" | tail -n 1
+}
+
+support_menu() {
+  while true; do
+    line; echo "SUPORTE E SOLUÇÃO DE ERROS"; line
+    echo "1) Diagnóstico automático"
+    echo "2) Microfone ou gravação curta"
+    echo "3) Erro moov atom not found"
+    echo "4) Whisper ou modelo ausente"
+    echo "5) Termux fechou com signal 9"
+    echo "6) CTranslate2/tradução indisponível"
+    echo "7) SSSystem não encontrado"
+    echo "8) Voltar"
+    echo
+    read -r -p "Escolha uma opção: " support_choice
+    case "$support_choice" in
+      1) diagnose;;
+      2) echo "Conceda a permissão de microfone ao Termux:API. A gravação usa -l 0, aguarda 8 segundos e encerra com -q.";;
+      3) echo "O M4A foi lido antes de finalizar. Pare com -q, aguarde 3 segundos e valide novamente com ffprobe.";;
+      4) echo "Use a opção 3. Verifique: test -x ~/tradutor-local/bin/whisper-cli e test -s ~/tradutor-local/models/ggml-base.bin.";;
+      5) echo "O Android encerrou um processo pesado por memória. Reabra o Termux e use o diagnóstico; não repita a instalação pesada.";;
+      6) echo "A tradução Python não foi validada. Não instale PyQt5, Qt, spaCy ou Stanza; continue com captura e transcrição.";;
+      7) echo 'Execute: export PATH="$HOME/bin:$PATH"; hash -r; SSSystem';;
+      8) return 0;;
+      *) echo "Opção inválida";;
+    esac
+    echo; read -r -p "Pressione ENTER para continuar: " _
+  done
+}
+
 show_status() { line; echo "STATUS ATUAL"; line; check_environment; check_project; }
 
 menu() {
   ensure_dirs
   while true; do
     echo; line; echo "ASSISTENTE DO PROTÓTIPO LOCAL"; line
-    echo "1) Ver status"; echo "2) Preparar/verificar Python"; echo "3) Preparar Whisper e modelo"; echo "4) Gravar áudio real"; echo "5) Transcrever último áudio"; echo "6) Verificar tradução pendente"; echo "7) Sair"; echo
+    echo "1) Ver status"; echo "2) Preparar/verificar Python"; echo "3) Preparar Whisper e modelo"; echo "4) Gravar áudio real"; echo "5) Transcrever último áudio"; echo "6) Verificar tradução pendente"; echo "7) Suporte e solução de erros"; echo "8) Sair"; echo
     read -r -p "Escolha uma opção: " choice
     case "$choice" in
-      1) show_status;; 2) prepare_python;; 3) prepare_whisper;; 4) record_audio;; 5) transcribe_latest;; 6) translate_latest;; 7) exit 0;; *) echo "Opção inválida";;
+      1) show_status;; 2) prepare_python;; 3) prepare_whisper;; 4) record_audio;; 5) transcribe_latest;; 6) translate_latest;; 7) support_menu;; 8) exit 0;; *) echo "Opção inválida";;
     esac
   done
 }
