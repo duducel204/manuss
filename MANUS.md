@@ -4,14 +4,14 @@
 
 Trate este repositório como um fluxo em duas partes:
 
-1. **Etapa 1 — Ponte MCP pessoal:** conectar a inteligência artificial ao Termux do próprio usuário.
+1. **Etapa 1 — Ponte MCP pessoal:** conectar a inteligência artificial ao Windows ou ao Termux do próprio usuário.
 2. **Etapa 2 — Tradutor local:** preparar e operar captura, transcrição e tradução depois que a conexão MCP estiver validada.
 
 A Etapa 1 é um pré-requisito obrigatório. Não conduza a instalação do Whisper ou do tradutor como primeiro passo quando a ponte ainda não estiver conectada.
 
 ## Quando o usuário iniciar
 
-Se o usuário quiser usar o repositório, explique primeiro que a ponte MCP é a fundação do projeto. Oriente-o a instalar o Termux e, se for usar áudio, o Termux:API pela mesma origem. Um Termux recém-instalado pode não ter nem `curl`; por isso, forneça exatamente este comando inicial:
+Se o usuário quiser usar o repositório, explique primeiro que a ponte MCP é a fundação do projeto. Se o ambiente for Windows, siga [`windows/README.md`](windows/README.md), instale Python 3.11+ e execute os scripts PowerShell. Se o ambiente for Android, oriente-o a instalar o Termux e, se for usar áudio, o Termux:API pela mesma origem. Um Termux recém-instalado pode não ter nem `curl`; por isso, forneça exatamente este comando inicial:
 
 ```bash
 pkg update -y && pkg install -y curl && \
@@ -21,6 +21,15 @@ curl -fsSL --retry 3 \
 ```
 
 Esse comando instala somente a ponte MCP. Não instale o tradutor nesse momento.
+
+No Windows, inclusive em uma máquina sem Git ou Python, a instalação equivalente é:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+irm https://raw.githubusercontent.com/duducel204/manuss/main/windows/bootstrap_mcp.ps1 | iex
+```
+
+O bootstrap tenta instalar Python 3.12 via `winget`. Se `winget` não estiver disponível, orientar a instalação manual de Python 3.11+ com `Add python.exe to PATH`, fechar e reabrir o PowerShell e repetir o comando. Nesse modo, a ferramenta `termux_exec` mantém o nome por compatibilidade, mas executa o comando no PowerShell local do Windows. Para um cliente no mesmo computador, use `http://127.0.0.1:8765/mcp`; para acesso remoto, use uma VPN ou túnel gerenciado, sem expor a porta diretamente.
 
 Depois, oriente o usuário a executar:
 

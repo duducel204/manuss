@@ -19,10 +19,18 @@ from typing import Any
 
 HOST = os.getenv("TERMUX_MCP_HOST", "127.0.0.1")
 PORT = int(os.getenv("TERMUX_MCP_PORT", "8765"))
-TOKEN_FILE = Path(os.getenv("TERMUX_MCP_TOKEN_FILE", "~/.config/termux-mcp/token")).expanduser()
 MAX_OUTPUT = int(os.getenv("TERMUX_MCP_MAX_OUTPUT", "20000"))
 DEFAULT_TIMEOUT = int(os.getenv("TERMUX_MCP_TIMEOUT", "120"))
-SHELL = os.getenv("TERMUX_MCP_SHELL", "/data/data/com.termux/files/usr/bin/bash")
+if os.name == "nt":
+    DEFAULT_SHELL = os.getenv("COMSPEC", "powershell.exe")
+    DEFAULT_TOKEN_FILE = Path(os.getenv("APPDATA", Path.home())) / "termux-mcp" / "token"
+else:
+    DEFAULT_SHELL = "/data/data/com.termux/files/usr/bin/bash"
+    DEFAULT_TOKEN_FILE = Path("~/.config/termux-mcp/token").expanduser()
+SHELL = os.getenv("TERMUX_MCP_SHELL", DEFAULT_SHELL)
+SHELL_MODE = os.getenv("TERMUX_MCP_SHELL_MODE", "powershell" if os.name == "nt" else "posix").lower()
+TOKEN_FILE = Path(os.getenv("TERMUX_MCP_TOKEN_FILE", str(DEFAULT_TOKEN_FILE))).expanduser()
+RUNTIME_NAME = "Windows PowerShell" if os.name == "nt" else "Termux Bash"
 PROTOCOL_VERSION = "2025-06-18"
 
 
@@ -39,13 +47,16 @@ def clip(data: bytes) -> str:
 
 
 async def termux_exec(command: str, timeout_seconds: int = DEFAULT_TIMEOUT) -> dict[str, Any]:
-    """Execute a shell command in Termux and return stdout, stderr and exit code."""
+    """Execute a command in the configured local shell and return its result."""
     command = command.strip()
     if not command:
         raise ValueError("command não pode ser vazio")
     timeout_seconds = max(1, min(int(timeout_seconds), 300))
+    shell_args = [SHELL, "-NoProfile", "-NonInteractive", "-Command", command]
+    if SHELL_MODE in {"posix", "bash", "sh"}:
+        shell_args = [SHELL, "-lc", command]
     process = await asyncio.create_subprocess_exec(
-        SHELL, "-lc", command,
+        *shell_args,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
         cwd=os.path.expanduser("~"),
@@ -86,7 +97,7 @@ def handle_message(message: dict[str, Any]) -> dict[str, Any] | None:
                 "protocolVersion": params.get("protocolVersion", PROTOCOL_VERSION),
                 "capabilities": {"tools": {}},
                 "serverInfo": {"name": "termux-personal-bridge", "version": "1.0.0"},
-                "instructions": "Use termux_exec only when explicitly requested by the user.",
+                "instructions": f"Use termux_exec only when explicitly requested by the user. Commands run in {RUNTIME_NAME}.",
             },
         }
     if method == "ping":
@@ -96,7 +107,7 @@ def handle_message(message: dict[str, Any]) -> dict[str, Any] | None:
             "jsonrpc": "2.0", "id": request_id,
             "result": {"tools": [{
                 "name": "termux_exec",
-                "description": "Execute one shell command in the user's Termux and return stdout, stderr and exit code.",
+                "description": f"Execute one command in the user's local {RUNTIME_NAME} and return stdout, stderr and exit code.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -179,7 +190,7 @@ class MCPHandler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
-    if not Path(SHELL).exists():
+    if os.path.isabs(SHELL) and not Path(SHELL).exists():
         raise SystemExit(f"Shell não encontrado: {SHELL}")
     load_token()
     server = ThreadingHTTPServer((HOST, PORT), MCPHandler)

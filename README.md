@@ -1,6 +1,6 @@
-# Ponte MCP pessoal e tradutor local para Termux
+# Ponte MCP pessoal para Windows/Termux e tradutor local
 
-Este repositório tem **duas partes separadas**. A primeira é obrigatória: uma ponte MCP pessoal que conecta o Termux a uma inteligência artificial compatível com MCP. A segunda é o agente local de captura, transcrição e tradução.
+Este repositório tem **duas partes separadas**. A primeira é obrigatória: uma ponte MCP pessoal que conecta o Windows ou o Termux a uma inteligência artificial compatível com MCP. A segunda é o agente local de captura, transcrição e tradução, atualmente voltado ao Termux.
 
 > **Regra de entrada:** primeiro conecte a ponte MCP. Só depois prepare o tradutor.
 
@@ -8,7 +8,7 @@ Este repositório tem **duas partes separadas**. A primeira é obrigatória: uma
 
 ```text
 Parte 1 — Ponte MCP
-Termux → servidor MCP local → túnel HTTPS → cliente de IA
+Windows/Termux → servidor MCP local → túnel HTTPS opcional → cliente de IA
 
 Parte 2 — Tradutor local
 microfone → Termux:API → FFmpeg → Whisper → tradução offline
@@ -20,20 +20,31 @@ A ponte não é exclusiva do Manus. O servidor expõe MCP por HTTP com JSON-RPC,
 
 ### Objetivo
 
-Este projeto não é apenas um tradutor. Ele também pode estabelecer uma ponte MCP entre uma IA conversacional compatível e o ambiente Termux do usuário. O fluxo de comunicação é:
+Este projeto não é apenas um tradutor. Ele também pode estabelecer uma ponte MCP entre uma IA conversacional compatível e o ambiente local do usuário. O fluxo de comunicação é:
 
 ```text
-IA conversacional → MCP Bridge → Termux → comando/operação → resultado → MCP → IA
+IA conversacional → MCP Bridge → Windows/Termux → comando/operação → resultado → MCP → IA
 ```
 
-Depois que a conexão estiver configurada, a IA pode, através da própria conversa, consultar o estado real do Termux, listar arquivos e diretórios, executar operações autorizadas, receber os resultados e usar essas informações para orientar ou executar os próximos passos. Essa capacidade é genérica: pode ser usada para desenvolver, testar, diagnosticar e operar outros projetos existentes no Termux, mesmo que não tenham relação com tradução.
+Depois que a conexão estiver configurada, a IA pode, através da própria conversa, consultar o estado real do computador, listar arquivos e diretórios, executar operações autorizadas, receber os resultados e usar essas informações para orientar ou executar os próximos passos. Essa capacidade é genérica: pode ser usada para desenvolver, testar, diagnosticar e operar outros projetos locais, mesmo que não tenham relação com tradução.
 
-No código atual, essa comunicação é implementada pelo servidor [`termux/mcp_server.py`](termux/mcp_server.py). Ele aceita requisições JSON-RPC autenticadas em `POST /mcp` e expõe a ferramenta `termux_exec`, que executa um comando Bash no próprio Termux e retorna a saída padrão, a saída de erro, o código de saída e a indicação de timeout. O endpoint autenticado `GET /health` permite verificar se o servidor está ativo. O servidor escuta localmente em `127.0.0.1:8765`; o [`termux/setup_mcp.sh`](termux/setup_mcp.sh) inicia também um Cloudflare Quick Tunnel para permitir o acesso HTTPS remoto.
+No código atual, essa comunicação é implementada pelo servidor [`termux/mcp_server.py`](termux/mcp_server.py). Ele aceita requisições JSON-RPC autenticadas em `POST /mcp` e expõe a ferramenta `termux_exec`, que executa Bash no Termux ou PowerShell no Windows e retorna a saída padrão, a saída de erro, o código de saída e a indicação de timeout. O endpoint autenticado `GET /health` permite verificar se o servidor está ativo. O servidor escuta localmente em `127.0.0.1:8765`.
+
+### Uso no Windows
+
+Para Windows, use os scripts em [`windows/`](windows/). O fluxo também funciona em uma máquina virgem, sem Git ou Python previamente instalado: o bootstrap tenta instalar Python via `winget`, baixa o servidor e gera um token em `%APPDATA%\termux-mcp\token`:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+irm https://raw.githubusercontent.com/duducel204/manuss/main/windows/bootstrap_mcp.ps1 | iex
+```
+
+Se `winget` não estiver disponível, instale Python 3.11+ manualmente, marque `Add python.exe to PATH`, reabra o PowerShell e repita o bootstrap. O cadastro local usa `http://127.0.0.1:8765/mcp` e o header `Authorization: Bearer <token>`. Para conectar um cliente que não esteja no mesmo computador, use uma VPN/rede privada ou um túnel gerenciado; não exponha a porta diretamente à internet. Consulte [`windows/README.md`](windows/README.md) para o fluxo completo.
 
 ### Pré-requisitos
 
-- Termux instalado no Android e acesso à internet.
-- `curl`, instalado pelo comando inicial documentado abaixo.
+- Termux instalado no Android, ou Windows 10/11 com Python 3.11+ no `PATH`.
+- `curl`, no fluxo Termux; no Windows, PowerShell e Python são suficientes para a ponte local.
 - Um cliente de IA que aceite servidores MCP remotos por HTTP e headers de autenticação.
 - Termux:API somente se a segunda parte, de captura de áudio, também for usada.
 
