@@ -83,7 +83,7 @@ fi
 printf '\n==============================================\n'
 printf 'TERMUX MCP ATIVO\n'
 printf '==============================================\n'
-printf 'URL para o Manus: %s/mcp\n' "$URL"
+printf 'URL MCP: %s/mcp\n' "$URL"
 printf 'Header: Authorization: Bearer %s\n' "$(cat "$TOKEN_FILE")"
 printf '==============================================\n'
 printf 'Mantenha este terminal aberto. Ctrl+C encerra a ponte.\n\n'

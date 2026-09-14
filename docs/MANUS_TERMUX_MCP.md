@@ -60,7 +60,7 @@ Executar:
 O comando inicia o servidor local e o Cloudflare Quick Tunnel. O usuário deve manter esse terminal aberto. Após a conexão, o terminal exibirá:
 
 ```text
-URL para o Manus: https://<nome>.trycloudflare.com/mcp
+URL MCP: https://<nome>.trycloudflare.com/mcp
 Header: Authorization: Bearer <token>
 ```
 
