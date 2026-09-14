@@ -27,9 +27,10 @@ A ponte permite que a IA conectada ao seu servidor:
 
 ### Pré-requisitos
 
-Instale o **Termux** no Android e, se também quiser usar captura de áudio, instale o **Termux:API** pela mesma origem. Para a ponte MCP, o Termux:API não é obrigatório. Abra o Termux e execute este único comando:
+Instale o **Termux** no Android e, se também quiser usar captura de áudio, instale o **Termux:API** pela mesma origem. Para a ponte MCP, o Termux:API não é obrigatório. Abra o Termux e execute este único comando. Ele instala o `curl` primeiro, porque um Termux recém-instalado pode ainda não ter esse programa:
 
 ```bash
+pkg update -y && pkg install -y curl && \
 curl -fsSL --retry 3 \
   https://raw.githubusercontent.com/duducel204/manuss/main/termux/bootstrap_mcp.sh \
   | bash

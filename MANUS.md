@@ -11,9 +11,10 @@ A Etapa 1 é um pré-requisito obrigatório. Não conduza a instalação do Whis
 
 ## Quando o usuário iniciar
 
-Se o usuário quiser usar o repositório, explique primeiro que a ponte MCP é a fundação do projeto. Oriente-o a instalar o Termux e, se for usar áudio, o Termux:API pela mesma origem. Em seguida, forneça exatamente este comando no Termux:
+Se o usuário quiser usar o repositório, explique primeiro que a ponte MCP é a fundação do projeto. Oriente-o a instalar o Termux e, se for usar áudio, o Termux:API pela mesma origem. Um Termux recém-instalado pode não ter nem `curl`; por isso, forneça exatamente este comando inicial:
 
 ```bash
+pkg update -y && pkg install -y curl && \
 curl -fsSL --retry 3 \
   https://raw.githubusercontent.com/duducel204/manuss/main/termux/bootstrap_mcp.sh \
   | bash
