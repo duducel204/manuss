@@ -11,7 +11,7 @@ log() { printf '\n[termux-mcp] %s\n' "$1"; }
 fail() { printf '\n[termux-mcp] ERRO: %s\n' "$1" >&2; exit 1; }
 command -v pkg >/dev/null 2>&1 || fail "Execute este script dentro do Termux."
 
-log "Instalando dependências"
+log "Instalando dependências leves"
 pkg update -y
 pkg install -y python cloudflared curl
 
@@ -27,8 +27,9 @@ PY
   log "Token pessoal criado em $TOKEN_FILE"
 fi
 
-curl -fL --retry 3 "$RAW_BASE/mcp_server.py" -o "$MCP_DIR/server.py"
-curl -fL --retry 3 "$RAW_BASE/requirements-mcp.txt" -o "$MCP_DIR/requirements.txt"
+# O parâmetro evita que um cache intermediário entregue uma versão antiga.
+curl -fL --retry 3 "$RAW_BASE/mcp_server.py?v=3" -o "$MCP_DIR/server.py"
+curl -fL --retry 3 "$RAW_BASE/requirements-mcp.txt?v=3" -o "$MCP_DIR/requirements.txt"
 
 cat > "$MCP_DIR/run_server.sh" <<'SH'
 #!/data/data/com.termux/files/usr/bin/bash
@@ -39,44 +40,80 @@ exec python "$APP_DIR/mcp/server.py"
 SH
 chmod +x "$MCP_DIR/run_server.sh"
 
+cat > "$MCP_DIR/start.sh" <<'SH'
+#!/data/data/com.termux/files/usr/bin/bash
+set -Eeuo pipefail
+APP_DIR="${HOME}/tradutor-local"
+MCP_DIR="$APP_DIR/mcp"
+TOKEN_FILE="${HOME}/.config/termux-mcp/token"
+SERVER_LOG="$APP_DIR/logs/mcp-server.log"
+TUNNEL_LOG="$APP_DIR/logs/mcp-tunnel.log"
+
+cleanup() {
+  [ -n "${TUNNEL_PID:-}" ] && kill "$TUNNEL_PID" 2>/dev/null || true
+  [ -n "${SERVER_PID:-}" ] && kill "$SERVER_PID" 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+
+export TERMUX_MCP_TOKEN_FILE="$TOKEN_FILE"
+python "$MCP_DIR/server.py" >"$SERVER_LOG" 2>&1 &
+SERVER_PID=$!
+sleep 1
+kill -0 "$SERVER_PID" 2>/dev/null || { cat "$SERVER_LOG" >&2; exit 1; }
+
+: > "$TUNNEL_LOG"
+cloudflared tunnel --no-autoupdate --url http://127.0.0.1:8765 2>&1 | tee "$TUNNEL_LOG" &
+TUNNEL_PID=$!
+
+URL=""
+for _ in $(seq 1 30); do
+  URL=$(grep -oE 'https://[a-zA-Z0-9-]+\.trycloudflare\.com' "$TUNNEL_LOG" | head -n 1 || true)
+  [ -n "$URL" ] && break
+  sleep 1
+done
+
+if [ -z "$URL" ]; then
+  echo "Não foi possível obter a URL do Quick Tunnel." >&2
+  cat "$TUNNEL_LOG" >&2
+  exit 1
+fi
+
+printf '\n==============================================\n'
+printf 'TERMUX MCP ATIVO\n'
+printf '==============================================\n'
+printf 'URL para o Manus: %s/mcp\n' "$URL"
+printf 'Header: Authorization: Bearer %s\n' "$(cat "$TOKEN_FILE")"
+printf '==============================================\n'
+printf 'Mantenha este terminal aberto. Ctrl+C encerra a ponte.\n\n'
+
+wait "$TUNNEL_PID"
+SH
+chmod +x "$MCP_DIR/start.sh"
+
 cat > "$MCP_DIR/run_tunnel.sh" <<'SH'
 #!/data/data/com.termux/files/usr/bin/bash
 set -Eeuo pipefail
-TOKEN_FILE="${HOME}/.config/termux-mcp/cloudflared-token"
-[ -s "$TOKEN_FILE" ] || { echo "Crie $TOKEN_FILE com o token do túnel Cloudflare." >&2; exit 2; }
-exec cloudflared tunnel --no-autoupdate run --token "$(cat "$TOKEN_FILE")"
+exec "${HOME}/tradutor-local/mcp/start.sh"
 SH
 chmod +x "$MCP_DIR/run_tunnel.sh"
 
 cat > "$MCP_DIR/README-local.txt" <<EOF
-Servidor: $MCP_DIR/server.py
+Para iniciar tudo com um único comando:
+  $MCP_DIR/start.sh
+
+Esse comando inicia o servidor MCP e um Cloudflare Quick Tunnel temporário.
+Mantenha o terminal aberto. A URL exibida deve terminar em /mcp.
+
 Token MCP: $TOKEN_FILE
-
-Inicie em dois terminais:
-  $MCP_DIR/run_server.sh
-  $MCP_DIR/run_tunnel.sh
-
-No túnel Cloudflare, configure o serviço local como:
-  http://127.0.0.1:8765
-
-O endpoint MCP público será:
-  https://SEU_HOSTNAME/mcp
-
-No conector MCP do Manus, use o header:
-  Authorization: Bearer <conteúdo de $TOKEN_FILE>
 EOF
 
 cat <<EOF
 
-INSTALAÇÃO DO TERMUX MCP CONCLUÍDA
+INSTALAÇÃO CONCLUÍDA
 
-Servidor: $MCP_DIR/run_server.sh
-Túnel:    $MCP_DIR/run_tunnel.sh
-Token:    $TOKEN_FILE
+Agora execute apenas:
+  $MCP_DIR/start.sh
 
-Próximo passo:
-1. Crie um túnel Cloudflare gerenciado e configure o serviço para http://127.0.0.1:8765.
-2. Salve o token do túnel em $CONFIG_DIR/cloudflared-token (chmod 600).
-3. Inicie o servidor e o túnel em terminais separados.
-4. Registre no Manus o URL https://SEU_HOSTNAME/mcp com Authorization: Bearer <token MCP>.
+O comando iniciará o servidor MCP e exibirá automaticamente a URL para cadastrar no Manus.
+Mantenha o terminal aberto enquanto quiser usar a ponte.
 EOF

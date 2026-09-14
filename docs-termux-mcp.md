@@ -1,95 +1,86 @@
 # Ponte MCP pessoal entre o Manus e o Termux
 
-Este diretório contém uma ponte pessoal para executar comandos no próprio Termux a partir de uma conversa no Manus. O servidor MCP roda no Android, escuta somente em `127.0.0.1` e é publicado por uma conexão de saída do Cloudflare Tunnel. Assim, o celular não precisa abrir uma porta de entrada.
+Esta ponte permite que o Manus execute comandos no seu próprio Termux. O servidor roda no Android e um Cloudflare Quick Tunnel cria temporariamente o caminho HTTPS até ele. Não é necessário criar domínio, configurar painel ou instalar o SDK MCP.
 
-## Componentes
-
-```text
-Manus → endpoint MCP HTTPS → Cloudflare Tunnel → 127.0.0.1:8765 → server.py → bash do Termux
-```
-
-O servidor expõe uma ferramenta chamada `termux_exec`, que recebe `command` e `timeout_seconds` e retorna `stdout`, `stderr`, `exit_code` e `timed_out`.
-
-No Termux, o servidor usa por padrão `/data/data/com.termux/files/usr/bin/bash`. Para testes fora do Android, esse caminho pode ser substituído com `TERMUX_MCP_SHELL`.
-
-## Instalação no Termux
+## Instalação simples
 
 No Termux, execute:
 
 ```bash
-pkg update -y && pkg install -y curl
-echo "https://raw.githubusercontent.com/duducel204/manuss/main/termux/setup_mcp.sh"
-curl -fL --retry 3 https://raw.githubusercontent.com/duducel204/manuss/main/termux/setup_mcp.sh -o ~/setup_mcp.sh
+curl -fL --retry 3 \
+  https://raw.githubusercontent.com/duducel204/manuss/main/termux/setup_mcp.sh?v=3 \
+  -o ~/setup_mcp.sh
+
 chmod +x ~/setup_mcp.sh
 ~/setup_mcp.sh
 ```
 
-O instalador cria o código em `~/tradutor-local/mcp` e gera um token pessoal em `~/.config/termux-mcp/token`. O servidor usa somente a biblioteca padrão do Python; portanto, não instala `mcp`, `uvicorn`, Rust nem extensões nativas.
+O instalador instala apenas `python`, `cloudflared` e `curl`, gera um token local e prepara o servidor MCP sem dependências externas. Isso evita o erro `rpds-py`/Rust que ocorre com o SDK oficial em alguns Termux aarch64.
 
-Essa escolha é intencional: o SDK oficial Python do MCP puxa `rpds-py`, que pode tentar compilar Rust para `aarch64-unknown-linux-android`, alvo que não está disponível em algumas instalações do Termux.
+## Iniciar tudo com um comando
 
-## Túnel persistente
-
-No painel Cloudflare, crie um túnel gerenciado, adicione uma aplicação publicada e aponte o serviço para `http://127.0.0.1:8765`. A documentação oficial descreve essa configuração em [Cloudflare Tunnel](https://developers.cloudflare.com/tunnel/setup/).
-
-Salve o token do túnel no Termux, sem colocá-lo no Git:
+Depois da instalação, execute:
 
 ```bash
-mkdir -p ~/.config/termux-mcp
-printf '%s\n' 'COLE_AQUI_O_TOKEN_DO_TUNEL' > ~/.config/termux-mcp/cloudflared-token
-chmod 600 ~/.config/termux-mcp/cloudflared-token
+~/tradutor-local/mcp/start.sh
 ```
 
-Use um terminal para cada processo:
-
-```bash
-~/tradutor-local/mcp/run_server.sh
-~/tradutor-local/mcp/run_tunnel.sh
-```
-
-O endpoint MCP será `https://SEU_HOSTNAME/mcp`.
-
-Para uma prova rápida, o Cloudflare oferece `cloudflared tunnel --url http://localhost:8765`, mas esse modo gera URL temporária e é indicado apenas para desenvolvimento. Para uso contínuo, use um túnel gerenciado com hostname estável.
-
-## Conector no Manus
-
-O conector deve usar o endpoint completo:
+O comando inicia o servidor MCP e o Quick Tunnel automaticamente. Após alguns segundos, ele exibirá algo parecido com:
 
 ```text
-https://SEU_HOSTNAME/mcp
+URL para o Manus: https://nome-aleatorio.trycloudflare.com/mcp
+Header: Authorization: Bearer SEU_TOKEN
 ```
 
-E o header HTTP:
+Mantenha esse terminal aberto. Pressionar `Ctrl+C` encerra o servidor e o túnel.
+
+## Cadastrar no Manus
+
+Use a URL exibida pelo comando, incluindo `/mcp`:
 
 ```text
-Authorization: Bearer CONTEUDO_DE_~/.config/termux-mcp/token
+https://nome-aleatorio.trycloudflare.com/mcp
 ```
 
-A criação do conector ainda não foi submetida porque o hostname do túnel e o token pessoal só existem depois da configuração no Termux/Cloudflare. Não publique o conteúdo desses arquivos no GitHub.
+Adicione o header HTTP:
 
-## Operação
+```text
+Authorization: Bearer SEU_TOKEN
+```
 
-Na conversa, o pedido explícito deve ser semelhante a:
+A URL muda quando o processo é encerrado ou reiniciado. Por isso, o Quick Tunnel é a opção mais simples para começar, mas não é uma URL permanente.
+
+## Uso
+
+Na conversa do Manus, solicite explicitamente:
 
 > Execute no meu Termux: `pwd && git status --short`
 
-O Manus chamará `termux_exec`. O comando é executado com Bash no diretório HOME do Termux. O tempo máximo é 300 segundos e a saída é limitada para evitar que uma chamada trave a conversa.
+A ferramenta disponibilizada é `termux_exec`. Ela retorna a saída do comando, os erros, o código de saída e informa quando o tempo limite foi atingido.
 
-## Diagnóstico
+## Diagnóstico local
 
-Servidor local:
+Com o servidor ativo, em outro terminal do Termux:
 
 ```bash
+TOKEN="$(cat ~/.config/termux-mcp/token)"
 curl -i http://127.0.0.1:8765/health \
-  -H "Authorization: Bearer $(cat ~/.config/termux-mcp/token)"
+  -H "Authorization: Bearer $TOKEN"
 ```
 
-O retorno esperado é `200` e `ok`. Se o endpoint local funciona, mas o Manus não conecta, confira o hostname público, a rota do túnel para `http://127.0.0.1:8765` e o header `Authorization`.
+O retorno esperado é `200` com `{"status": "ok"}`.
 
-## Limitações do protótipo
+## Arquivos locais
 
-O servidor executa comandos arbitrários porque o objetivo é uso pessoal no próprio dispositivo. Ele não implementa filas, histórico persistente, múltiplos usuários, confirmação adicional ou execução em background. Processos longos devem ser iniciados explicitamente com ferramentas do Termux, `tmux` ou scripts próprios.
+```text
+~/tradutor-local/mcp/server.py
+~/tradutor-local/mcp/start.sh
+~/tradutor-local/mcp/run_server.sh
+~/.config/termux-mcp/token
+~/tradutor-local/logs/mcp-server.log
+~/tradutor-local/logs/mcp-tunnel.log
+```
 
-## Desenvolvimento
+O servidor usa apenas a biblioteca padrão do Python e escuta em `127.0.0.1:8765`. O Cloudflare Tunnel faz uma conexão de saída; nenhuma porta de entrada do celular é aberta diretamente.
 
-A implementação segue o formato JSON-RPC do transporte Streamable HTTP e usa apenas a biblioteca padrão do Python para maximizar a compatibilidade com Termux/aarch64. O código principal está em [`termux/mcp_server.py`](termux/mcp_server.py), o instalador em [`termux/setup_mcp.sh`](termux/setup_mcp.sh) e a declaração de dependências em [`termux/requirements-mcp.txt`](termux/requirements-mcp.txt).
+Para uso permanente com URL fixa, pode-se trocar posteriormente o Quick Tunnel por um túnel Cloudflare gerenciado. Isso não é necessário para o primeiro teste.
