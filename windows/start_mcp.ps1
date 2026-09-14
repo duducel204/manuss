@@ -21,7 +21,7 @@ if (Test-Path $PythonPathFile) {
 }
 if (-not $pythonPath -or -not (Test-Path $pythonPath)) {
   $python = Get-Command py -ErrorAction SilentlyContinue
-  if ($python) {
+  if ($python -and $python.Source -notlike "*WindowsApps*py.exe") {
     $pythonPath = $python.Source
     $pythonArgs = @("-3", $ServerFile)
   } else {
