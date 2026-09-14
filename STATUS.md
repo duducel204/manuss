@@ -13,6 +13,18 @@
 - Transcrição local em português.
 - Comando `SSSystem` para iniciar o wizard.
 
+## Ponte MCP Manus → Termux
+
+- Servidor MCP pessoal implementado em `termux/mcp_server.py`.
+- Transporte HTTP com JSON-RPC e ferramenta `termux_exec`.
+- Implementação sem dependências externas, Rust ou `rpds-py`, compatível com Termux/aarch64.
+- Publicação simples por Cloudflare Quick Tunnel em `termux/start.sh`.
+- Inicialização automática em segundo plano por `termux/autostart_mcp.sh`.
+- Configuração opcional após reinicialização do Android via Termux:Boot.
+- Conector `Termux pessoal` criado e habilitado no Manus.
+- Chamada real validada: comando executado no Termux retornou `exit_code: 0`, saída e diretório HOME.
+- Limitação atual: o Quick Tunnel gera URL temporária; se a URL mudar, o endpoint do conector do Manus precisa ser atualizado.
+
 ## Não concluído
 
 - Tradução offline no Termux.
