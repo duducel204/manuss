@@ -16,6 +16,62 @@ microfone → Termux:API → FFmpeg → Whisper → tradução offline
 
 A ponte não é exclusiva do Manus. O servidor expõe MCP por HTTP com JSON-RPC, Bearer token e a ferramenta `termux_exec`; portanto, qualquer cliente de inteligência artificial que suporte servidores MCP remotos por HTTP e headers de autenticação pode utilizá-la. O cadastro do servidor varia conforme a IA. O Manus possui instruções específicas em [`MANUS.md`](MANUS.md); outras IAs devem receber a URL `/mcp` e o header `Authorization: Bearer <token>` conforme o mecanismo de configuração delas.
 
+## Conexão MCP
+
+### Objetivo
+
+Este projeto não é apenas um tradutor. Ele também pode estabelecer uma ponte MCP entre uma IA conversacional compatível e o ambiente Termux do usuário. O fluxo de comunicação é:
+
+```text
+IA conversacional → MCP Bridge → Termux → comando/operação → resultado → MCP → IA
+```
+
+Depois que a conexão estiver configurada, a IA pode, através da própria conversa, consultar o estado real do Termux, listar arquivos e diretórios, executar operações autorizadas, receber os resultados e usar essas informações para orientar ou executar os próximos passos. Essa capacidade é genérica: pode ser usada para desenvolver, testar, diagnosticar e operar outros projetos existentes no Termux, mesmo que não tenham relação com tradução.
+
+No código atual, essa comunicação é implementada pelo servidor [`termux/mcp_server.py`](termux/mcp_server.py). Ele aceita requisições JSON-RPC autenticadas em `POST /mcp` e expõe a ferramenta `termux_exec`, que executa um comando Bash no próprio Termux e retorna a saída padrão, a saída de erro, o código de saída e a indicação de timeout. O endpoint autenticado `GET /health` permite verificar se o servidor está ativo. O servidor escuta localmente em `127.0.0.1:8765`; o [`termux/setup_mcp.sh`](termux/setup_mcp.sh) inicia também um Cloudflare Quick Tunnel para permitir o acesso HTTPS remoto.
+
+### Pré-requisitos
+
+- Termux instalado no Android e acesso à internet.
+- `curl`, instalado pelo comando inicial documentado abaixo.
+- Um cliente de IA que aceite servidores MCP remotos por HTTP e headers de autenticação.
+- Termux:API somente se a segunda parte, de captura de áudio, também for usada.
+
+### Configuração
+
+1. No Termux, execute o bootstrap da ponte MCP. Ele instala apenas os componentes da ponte, não o tradutor:
+
+   ```bash
+   pkg update -y && pkg install -y curl && \
+   curl -fsSL --retry 3 \
+     https://raw.githubusercontent.com/duducel204/manuss/main/termux/bootstrap_mcp.sh \
+     | bash
+   ```
+
+2. Inicie a ponte:
+
+   ```bash
+   ~/tradutor-local/mcp/start.sh
+   ```
+
+3. Mantenha o terminal aberto e copie a URL exibida, terminada em `/mcp`, e o header `Authorization: Bearer <token>`.
+
+4. Cadastre esses dois dados no cliente de IA escolhido. O formato e o local do cadastro dependem do cliente; não há um cadastro universal definido pelo repositório. Nunca publique o token.
+
+5. Antes de tentar instalar, alterar ou operar qualquer projeto local, a IA deve verificar se existe uma conexão MCP ativa. Se não existir, deve orientar a configuração da ponte ou solicitar que o usuário a configure primeiro.
+
+O Quick Tunnel é temporário. Se a ponte for reiniciada e receber outra URL, o servidor MCP precisa ser atualizado no cliente de IA.
+
+### Teste mínimo
+
+Depois de cadastrar o servidor, envie à IA a solicitação:
+
+```text
+Verifique meu diretório HOME do Termux e liste os arquivos e diretórios que estão nele, sem modificar nada.
+```
+
+A IA deve usar a ferramenta existente `termux_exec` com uma operação de leitura equivalente a `pwd` e à listagem do diretório HOME. O resultado esperado é o caminho HOME do Termux e uma listagem dos arquivos e diretórios encontrados, sem alteração no ambiente. Se a IA não conseguir descobrir `termux_exec`, verificar a URL `/mcp`, o header Bearer, o processo `start.sh`, o terminal aberto e a validade da URL temporária.
+
 ## Comece pela Etapa 1 — Ponte MCP
 
 A ponte permite que a IA conectada ao seu servidor:
@@ -68,6 +124,8 @@ O guia detalhado para o Manus está em [`docs/MANUS_TERMUX_MCP.md`](docs/MANUS_T
 ## Etapa 2 — Preparar o tradutor local
 
 Só comece esta etapa depois que a ponte estiver conectada e validada. A IA poderá conduzir a preparação pelo MCP, ou você poderá usar os scripts diretamente no Termux.
+
+Uma IA que acabou de ler este repositório deve seguir esta ordem: **verificar ou estabelecer a Conexão MCP, testar uma operação de leitura no Termux e somente então tentar operar o ambiente local ou preparar o tradutor**. A existência dos scripts no GitHub não significa que a IA já tenha acesso ao dispositivo.
 
 Para instalar o agente local do tradutor, execute no Termux:
 
