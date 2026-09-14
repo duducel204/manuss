@@ -9,6 +9,12 @@ Trate este repositório como um fluxo em duas partes:
 
 A Etapa 1 é um pré-requisito obrigatório. Não conduza a instalação do Whisper ou do tradutor como primeiro passo quando a ponte ainda não estiver conectada.
 
+## Handoff atômico para o próximo Manus
+
+Ao receber este repositório, carregue primeiro a habilidade `termux-mcp-bridge`, se estiver disponível. Não presuma Windows ou Termux: identifique o host pelos sinais do terminal (`PS ...>`/`C:\...` para Windows; `pkg`, `/data/data/com.termux` ou `~/tradutor-local` para Termux). Se não houver sinal claro, faça uma única pergunta: **"Você está usando Windows ou Termux/Android?"**
+
+Depois de identificar o host, verifique se a ponte já está ativa. Se não estiver, use o bootstrap específico da habilidade. Se estiver, peça somente a saída real com a URL pública terminada em `/mcp` e o Bearer token; não invente, reutilize ou registre credenciais. Em seguida, carregue a configuração de conectores, crie ou atualize um único conector pessoal e valide `termux_exec` uma vez. Não releia todos os documentos nem instale o tradutor antes de `exit_code: 0`.
+
 ## Quando o usuário iniciar
 
 Se o usuário quiser usar o repositório, explique primeiro que a ponte MCP é a fundação do projeto. Se o ambiente for Windows, siga [`windows/README.md`](windows/README.md), instale Python 3.11+ e execute os scripts PowerShell. Se o ambiente for Android, oriente-o a instalar o Termux e, se for usar áudio, o Termux:API pela mesma origem. Um Termux recém-instalado pode não ter nem `curl`; por isso, forneça exatamente este comando inicial:

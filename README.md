@@ -209,6 +209,7 @@ A ponte executa comandos arbitrários no shell do usuário. Ela deve ser usada a
 ## Documentação
 
 - [`MANUS.md`](MANUS.md) — instruções para o Manus conduzir o usuário.
+- habilidade `termux-mcp-bridge` — onboarding atômico para o próximo Manus detectar Windows/Termux, iniciar a ponte e validar o conector.
 - [`docs/MANUS_TERMUX_MCP.md`](docs/MANUS_TERMUX_MCP.md) — onboarding detalhado da ponte MCP.
 - [`docs/AI_STUDIO_BUILD_MODE.md`](docs/AI_STUDIO_BUILD_MODE.md) — guia para importar o repositório e criar o cliente Gemini no AI Studio.
 - [`docs-termux-mcp.md`](docs-termux-mcp.md) — referência operacional da ponte.
