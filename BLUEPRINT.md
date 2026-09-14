@@ -250,7 +250,7 @@ tradutor-local/
 ├── termux/
 │   ├── install.sh
 │   ├── wizard.sh
-│   ├── setup_alias.sh
+│   ├── setup_command.sh
 │   └── scripts/
 ├── android/
 │   └── README.md
