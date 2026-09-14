@@ -30,6 +30,8 @@ fi
 # O parâmetro evita que um cache intermediário entregue uma versão antiga.
 curl -fL --retry 3 "$RAW_BASE/mcp_server.py?v=3" -o "$MCP_DIR/server.py"
 curl -fL --retry 3 "$RAW_BASE/requirements-mcp.txt?v=3" -o "$MCP_DIR/requirements.txt"
+curl -fL --retry 3 "$RAW_BASE/autostart_mcp.sh?v=3" -o "$MCP_DIR/autostart_mcp.sh"
+chmod +x "$MCP_DIR/autostart_mcp.sh"
 
 cat > "$MCP_DIR/run_server.sh" <<'SH'
 #!/data/data/com.termux/files/usr/bin/bash

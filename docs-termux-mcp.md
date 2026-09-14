@@ -84,3 +84,32 @@ O retorno esperado é `200` com `{"status": "ok"}`.
 O servidor usa apenas a biblioteca padrão do Python e escuta em `127.0.0.1:8765`. O Cloudflare Tunnel faz uma conexão de saída; nenhuma porta de entrada do celular é aberta diretamente.
 
 Para uso permanente com URL fixa, pode-se trocar posteriormente o Quick Tunnel por um túnel Cloudflare gerenciado. Isso não é necessário para o primeiro teste.
+
+## Inicialização automática
+
+O instalador também fornece `~/tradutor-local/mcp/autostart_mcp.sh`. Para iniciar a ponte automaticamente quando um shell interativo do Termux for aberto, execute uma vez:
+
+```bash
+printf '\n# Iniciar a ponte MCP pessoal\n' >> ~/.bashrc
+printf '%s\n' '[ -x "$HOME/tradutor-local/mcp/autostart_mcp.sh" ] && "$HOME/tradutor-local/mcp/autostart_mcp.sh"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+O script é idempotente: abrir vários shells não inicia cópias duplicadas. A URL e os logs ficam em:
+
+```bash
+tail -f ~/tradutor-local/logs/mcp-autostart.log
+```
+
+Para iniciar automaticamente depois que o Android reiniciar, instale o aplicativo **Termux:Boot** pela mesma origem do Termux e crie:
+
+```bash
+mkdir -p ~/.termux/boot
+cat > ~/.termux/boot/start-mcp <<'SH'
+#!/data/data/com.termux/files/usr/bin/bash
+exec "$HOME/tradutor-local/mcp/autostart_mcp.sh"
+SH
+chmod +x ~/.termux/boot/start-mcp
+```
+
+O Quick Tunnel continua sendo temporário. Quando ele gerar uma URL nova, o conector do Manus precisará ser atualizado com a nova URL. Para automação realmente sem manutenção, use um túnel gerenciado com hostname fixo.
