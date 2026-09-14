@@ -71,17 +71,29 @@ log "Executando verificação sem microfone"
 command -v termux-microphone-record >/dev/null 2>&1 || log "ATENÇÃO: Termux:API ainda não está disponível"
 
 download_atomically() {
-  local url="$1" destination="$2" temporary
+  local relative_path="$1" destination="$2" temporary url
   temporary="${destination}.tmp.$$"
+  for url in \
+    "$RAW_BASE/$relative_path" \
+    "https://github.com/duducel204/manuss/raw/refs/heads/main/termux/$relative_path" \
+    "https://api.github.com/repos/duducel204/manuss/contents/termux/$relative_path"; do
+    rm -f "$temporary"
+    if [[ "$url" == *api.github.com* ]]; then
+      curl -fL --retry 3 --retry-delay 2 -H 'Accept: application/vnd.github.raw+json' "$url" -o "$temporary" || continue
+    else
+      curl -fL --retry 3 --retry-delay 2 "$url" -o "$temporary" || continue
+    fi
+    [ -s "$temporary" ] || continue
+    mv -f "$temporary" "$destination"
+    return 0
+  done
   rm -f "$temporary"
-  curl -fL --retry 3 "$url" -o "$temporary"
-  [ -s "$temporary" ] || fail "Download vazio: $url"
-  mv -f "$temporary" "$destination"
+  fail "Não foi possível baixar termux/$relative_path por nenhuma URL alternativa."
 }
 
 log "Instalando wizard e comando SSSystem"
-download_atomically "$RAW_BASE/wizard.sh" "$HOME/wizard_tradutor_termux.sh"
-download_atomically "$RAW_BASE/setup_command.sh" "$HOME/setup_command_sssystem.sh"
+download_atomically "wizard.sh" "$HOME/wizard_tradutor_termux.sh"
+download_atomically "setup_command.sh" "$HOME/setup_command_sssystem.sh"
 chmod +x "$HOME/wizard_tradutor_termux.sh" "$HOME/setup_command_sssystem.sh"
 "$HOME/setup_command_sssystem.sh"
 

@@ -2,6 +2,48 @@
 
 Este documento reúne os problemas observados durante a instalação e os testes do protótipo Android/Termux. A regra geral é **diagnosticar antes de reinstalar** e preservar os arquivos do projeto.
 
+## 0. GitHub retorna `503` ou falha de proxy
+
+### Sintomas
+
+O bootstrap ou o instalador mostra:
+
+```text
+curl: (22) The requested URL returned error: 503
+Falha de rede ao acessar o GitHub.
+```
+
+### Causa provável
+
+O endpoint `raw.githubusercontent.com` pode estar temporariamente indisponível, bloqueado pela rede, interceptado por proxy/VPN ou sujeito a uma rota instável no aparelho. Isso não significa necessariamente que o repositório, a branch ou o arquivo estejam incorretos.
+
+### Comportamento do instalador
+
+O bootstrap e o instalador tentam, em ordem:
+
+1. `raw.githubusercontent.com`;
+2. a URL de download do GitHub;
+3. a API de conteúdo do GitHub em modo raw.
+
+Os downloads são feitos em arquivos temporários e só substituem o destino depois de uma resposta válida. O instalador não deve apagar `~/tradutor-local` nem substituir scripts válidos por arquivos incompletos.
+
+### Diagnóstico
+
+O `curl` respeita `HTTPS_PROXY`, `HTTP_PROXY` e `ALL_PROXY` quando configurados. Para verificar se há proxy explícito, sem imprimir valores que podem conter credenciais:
+
+```bash
+for name in HTTPS_PROXY HTTP_PROXY ALL_PROXY; do
+  eval "value=\${$name:-}"
+  [ -n "$value" ] && echo "$name configurado" || echo "$name não configurado"
+done
+```
+
+Se todos estiverem não configurados, verifique DNS, VPN, firewall, rede móvel e bloqueios ao GitHub. Se houver proxy configurado, confirme que ele está acessível e que permite HTTPS para GitHub. Não publique tokens ou URLs de proxy com credenciais nos relatórios.
+
+### Correção
+
+Aguarde alguns minutos e execute novamente o bootstrap. Não reinstale o Whisper nem apague a pasta do projeto apenas por um `503`; a instalação é retomável.
+
 ## 1. O instalador falha ao atualizar pacotes do Termux
 
 ### Sintomas
