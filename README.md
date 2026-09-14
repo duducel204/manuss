@@ -1,6 +1,22 @@
-# Tradutor Local para Streaming
+# Sistema de Tradução Local-First para Streamers
 
-Protótipo local-first para captura de áudio, transcrição e tradução offline voltado inicialmente a streamers.
+Este repositório contém o protótipo do **agente local** de um produto maior: uma ponte automática entre a fala do streamer e um público internacional. O produto completo é híbrido: captura, transcrição e tradução acontecem localmente sempre que possível; somente o texto traduzido necessário é enviado ao serviço online, que encaminha o resultado para um bot publicar no chat da transmissão.
+
+Em termos comerciais, o produto pretende permitir que o streamer continue falando normalmente enquanto seu público de outros idiomas entende o conteúdo em tempo real, mediante assinatura do serviço.
+
+```text
+Streamer fala
+→ captura local
+→ transcrição local
+→ tradução local
+→ texto traduzido
+→ backend/serviço online
+→ bot do canal
+→ chat da live
+→ público internacional
+```
+
+O tradutor offline não é o produto final; é o motor local de processamento. O bot é o mecanismo de entrega, o serviço online é a camada de autenticação, assinatura e integração, e o streamer é o cliente.
 
 ## Estado atual
 
@@ -25,13 +41,35 @@ A tradução offline ainda está em avaliação. O Argos Translate não funciono
 
 Os scripts de instalação e execução ficam em [`termux/`](termux/). Modelos Whisper, caches, áudios e credenciais não devem ser versionados.
 
+## Divisão entre agente local e serviço online
+
+### Agente local
+
+Responsável por selecionar a entrada de áudio, capturar a fala, detectar segmentos, transcrever, traduzir, filtrar silêncio, controlar a fila e enviar eventos textuais autenticados ao backend.
+
+### Serviço online
+
+Responsável por identificar o cliente, validar assinatura, associar o cliente ao canal, receber traduções, encaminhar eventos ao bot, controlar planos, revogar autorizações e manter a integração com a plataforma.
+
+### Bot
+
+Responsável por estar conectado ao canal autorizado e publicar as mensagens traduzidas conforme as regras e os limites da plataforma de streaming.
+
 ## Próximo marco
 
 ```text
 SSSystem → gravação real → transcrição local → teste isolado de tradução offline
 ```
 
-A integração com Kick, Supabase, assinaturas e envio de mensagens permanece fora do protótipo atual.
+A integração real com Kick, Supabase, assinaturas e envio de mensagens permanece fora do protótipo atual. O primeiro circuito de produto será considerado validado somente quando for possível demonstrar, em ambiente controlado:
+
+```text
+streamer instala → configura → conecta o canal → inicia → fala
+→ captura → transcrição → tradução → envio textual → bot recebe
+→ bot publica → público lê
+```
+
+Até esse ponto, a transcrição local validada representa apenas o motor, não o MVP completo.
 
 ## Guia rápido para outra IA
 
@@ -53,10 +91,11 @@ Considere `STATUS.md` como a fonte do estado técnico atual, `DECISIONS.md` como
 1. O ambiente atual é exclusivamente Android + Termux.
 2. O Whisper já funciona localmente; não substituir a transcrição sem necessidade.
 3. A tradução offline ainda não foi validada no Termux. Não reinstalar Argos/CTranslate2 automaticamente.
-4. Não iniciar integração com Kick, Supabase ou assinaturas antes de concluir o pipeline local.
-5. Não versionar modelos, áudios, resultados, caches, tokens ou credenciais.
-6. Antes de criar um novo script, verificar se a função já existe no wizard.
-7. Para cada mudança, atualizar `STATUS.md`, `CHECKLIST.md` ou `DECISIONS-OPEN.md` quando o estado do projeto mudar.
+4. O objetivo não é apenas construir um tradutor offline; é construir o agente local de um produto comercial híbrido para tradução de lives.
+5. Não iniciar integração real com Kick, Supabase ou assinaturas antes de concluir o pipeline local, mas preservar essa arquitetura como destino do produto.
+6. Não versionar modelos, áudios, resultados, caches, tokens ou credenciais.
+7. Antes de criar um novo script, verificar se a função já existe no wizard.
+8. Para cada mudança, atualizar `STATUS.md`, `CHECKLIST.md` ou `DECISIONS-OPEN.md` quando o estado do projeto mudar.
 
 ## Uso rápido no Termux
 
@@ -240,6 +279,8 @@ Só então proponha o próximo passo.
 
 Uma IA que receber apenas este repositório deve começar pelo `README.md`, sem presumir que o histórico da conversa esteja disponível. Em seguida, deve ler `BLUEPRINT.md` para entender o produto e sua arquitetura, `DECISIONS.md` para separar decisões confirmadas de sugestões, `STATUS.md` para saber o que foi efetivamente testado, `CHECKLIST.md` para escolher uma única próxima ação, `DECISIONS-OPEN.md` para conhecer as incertezas e `TROUBLESHOOTING.md` antes de diagnosticar qualquer falha.
 
+O contexto estratégico obrigatório é: **o repositório implementa primeiro o agente local de um produto de tradução automática para transmissões ao vivo**. A visão final é `capturar → transcrever → traduzir → enviar → publicar no chat`. O processamento local reduz dependência, custo e exposição do áudio, mas o produto não é completamente offline: autenticação, assinatura, backend, bot e chat dependem da internet.
+
 Depois da leitura, a IA deve executar somente verificações não destrutivas:
 
 ```bash
@@ -302,3 +343,7 @@ OK — scripts, wizard e SSSystem passaram no teste simulado.
 ```
 
 O GitHub Actions executa esse mesmo teste em cada `push` e `pull_request`, por meio de `.github/workflows/shell-tests.yml`. Esse teste não substitui a validação manual do microfone, da duração do M4A, da transcrição e das permissões Android; ele valida a instalação lógica e a integração entre wizard e `SSSystem`.
+
+## Regra estratégica permanente
+
+Nenhuma futura implementação deve interpretar este projeto como apenas uma biblioteca ou aplicativo de tradução offline. A arquitetura local-first é o meio técnico para entregar o produto: uma camada de tradução automática que permite ao streamer alcançar uma audiência internacional sem mudar a maneira como transmite. Novas funcionalidades devem ajudar a fechar o circuito principal antes de expandir para legendas, overlays, comandos ou outras automações.
