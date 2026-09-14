@@ -234,9 +234,9 @@ captura real
 
 O primeiro critério de sucesso é uma frase atravessar todo o pipeline sem envio para a Kick.
 
-### Fase D — Repositório GitHub
+### Fase D — Manutenção do repositório GitHub
 
-Somente depois de limpar os scripts, criar um repositório com:
+O repositório já foi criado. A estrutura desejada é:
 
 ```text
 tradutor-local/
@@ -244,8 +244,9 @@ tradutor-local/
 ├── BLUEPRINT.md
 ├── DECISIONS.md
 ├── STATUS.md
-├── ROADMAP.md
 ├── CHECKLIST.md
+├── TROUBLESHOOTING.md
+├── DECISIONS-OPEN.md
 ├── LICENSE
 ├── termux/
 │   ├── install.sh

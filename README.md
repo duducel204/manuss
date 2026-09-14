@@ -19,6 +19,7 @@ A tradução offline ainda está em avaliação. O Argos Translate não funciono
 - [Status técnico](STATUS.md)
 - [Checklist](CHECKLIST.md)
 - [Decisões em aberto](DECISIONS-OPEN.md)
+- [Troubleshooting](TROUBLESHOOTING.md)
 
 ## Termux
 
