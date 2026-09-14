@@ -26,7 +26,7 @@ No Windows, inclusive em uma máquina sem Git ou Python, a instalação equivale
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass -Force
-irm https://raw.githubusercontent.com/duducel204/manuss/6ae55e7a12685743fac35f6d0414d9af8e6a937e/windows/bootstrap_mcp_pinned.ps1 | iex
+irm https://raw.githubusercontent.com/duducel204/manuss/7e45e491994586d7cb9bb8247816dade7234bed8/windows/bootstrap_mcp_pinned.ps1 | iex
 ```
 
 O bootstrap pinned tenta instalar Python 3.12 via `winget`, baixa o `cloudflared` e pode ser executado de qualquer pasta. Se `winget` não estiver disponível, orientar a instalação manual de Python 3.11+ com `Add python.exe to PATH`, fechar e reabrir o PowerShell e repetir o comando. O `start_mcp.ps1` inicia o servidor e o Quick Tunnel automaticamente e exibe a URL pública `/mcp`. Nesse modo, a ferramenta `termux_exec` mantém o nome por compatibilidade, mas executa o comando no PowerShell local do Windows. Não expor a porta diretamente.

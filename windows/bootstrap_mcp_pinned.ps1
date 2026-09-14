@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-$RawBase = "https://raw.githubusercontent.com/duducel204/manuss/90c3d4c3be17a404eb0e188396e5e6aacfe67fa8/windows"
+$RawBase = "https://raw.githubusercontent.com/duducel204/manuss/7e45e491994586d7cb9bb8247816dade7234bed8/windows"
 $TempDir = Join-Path $env:TEMP "manuss-mcp-bootstrap"
 $SetupFile = Join-Path $TempDir "setup_mcp.ps1"
 $StartFile = Join-Path $TempDir "start_mcp.ps1"
