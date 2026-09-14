@@ -277,3 +277,28 @@ microfone real → arquivo M4A finalizado → FFmpeg → Whisper → texto em po
 ```
 
 Se a instalação falhar, o usuário deve reabrir o Termux, executar `SSSystem` se ele já existir e escolher **Suporte e solução de erros**. Não deve apagar `~/tradutor-local` nem repetir uma instalação pesada antes de consultar `TROUBLESHOOTING.md`.
+
+## Testes automatizados pós-instalação
+
+O repositório possui o teste reproduzível `tests/test_termux_installation.sh`. Ele não compila o Whisper nem acessa um microfone real. Em vez disso, cria uma HOME temporária e simula os comandos do Termux para validar a instalação lógica:
+
+1. sintaxe de todos os scripts `.sh`;
+2. configuração do `SSSystem`;
+3. criação do executável em `~/bin/SSSystem`;
+4. execução do wizard pelo comando `SSSystem`;
+5. presença do menu de suporte;
+6. idempotência do setup, sem duplicar a entrada do `PATH`.
+
+Para executar localmente em Linux, macOS ou Termux:
+
+```bash
+bash tests/test_termux_installation.sh
+```
+
+O resultado esperado é:
+
+```text
+OK — scripts, wizard e SSSystem passaram no teste simulado.
+```
+
+O GitHub Actions executa esse mesmo teste em cada `push` e `pull_request`, por meio de `.github/workflows/shell-tests.yml`. Esse teste não substitui a validação manual do microfone, da duração do M4A, da transcrição e das permissões Android; ele valida a instalação lógica e a integração entre wizard e `SSSystem`.

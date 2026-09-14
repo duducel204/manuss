@@ -33,3 +33,7 @@ Se ocorrer um erro, escolha no wizard a opção **Suporte e solução de erros**
 ## Cuidados
 
 Não versionar modelos, áudios, resultados, caches, tokens ou credenciais. O instalador deve ser revisado antes de ser usado em outro dispositivo, pois versões do Termux, Android, arquitetura e memória podem variar.
+
+## Teste automatizado
+
+Na raiz do repositório, execute `bash tests/test_termux_installation.sh`. O teste usa uma HOME temporária e comandos simulados; ele verifica a sintaxe, a criação do `SSSystem`, a execução do wizard e a idempotência do setup. Testes de microfone e transcrição continuam sendo testes manuais no Android.

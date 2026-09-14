@@ -25,7 +25,7 @@ if [ ! -f "$WIZARD" ]; then
 fi
 
 chmod +x "$WIZARD"
-exec "$WIZARD"
+exec bash "$WIZARD"
 SH
 
 chmod +x "$COMMAND_FILE"
