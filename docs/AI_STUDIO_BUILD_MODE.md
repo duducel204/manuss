@@ -59,6 +59,17 @@ stdout, stderr, exit_code, timed_out
 
 O backend deve manter a chave da Gemini e o token MCP. O navegador nunca deve receber esses valores.
 
+### Implementação do cliente neste repositório
+
+O aplicativo usa o Gemini function calling como camada de decisão e um cliente MCP JSON-RPC server-side como camada de transporte:
+
+```text
+Gemini function calling → proposta assinada → aprovação no frontend
+→ backend revalida → cliente MCP JSON-RPC → termux_exec
+```
+
+O SDK Gemini também possui tipos para Remote MCP nativo, mas este adaptador explícito é mantido para revisar e aprovar cada comando antes do envio ao Termux. Não substituir esse fluxo por chamada automática do servidor MCP sem preservar a aprovação no backend.
+
 ## 4. Capacidades MCP existentes
 
 O servidor atual implementa:
@@ -138,6 +149,8 @@ Não aceite comandos arbitrários diretamente do navegador. Faça a decisão e a
 Essa política de confirmação deve ser implementada pela aplicação. Não diga que ela já existe no servidor MCP. O servidor atual oferece apenas autenticação Bearer e a ferramenta termux_exec.
 
 Não crie ferramentas fictícias de projeto, arquivo ou Git. Não instale Whisper, Termux:API, modelos ou o tradutor nesta primeira aplicação. Inclua um README explicando os três secrets, como iniciar a ponte e como executar o teste mínimo.
+
+Assine cada proposta de comando no backend e revalide a assinatura, o nome da ferramenta, o comando e a avaliação de segurança no endpoint de execução. Nunca confie somente no campo `userApproved` enviado pelo navegador. Use `APPROVAL_SIGNING_KEY` como secret opcional; se ele não existir, use a chave Gemini somente no server-side como fallback.
 ```
 
 ## 8. Teste mínimo

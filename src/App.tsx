@@ -150,6 +150,8 @@ export default function App() {
           toolCall,
           history,
           userApproved: true,
+          sensitiveApproved: Boolean(toolCall.safety?.isSensitive),
+          approvalSignature: toolCall.approvalSignature,
         }),
       });
 

@@ -8,6 +8,7 @@ export interface ToolCallProposal {
   name: string;
   command: string;
   timeout_seconds?: number;
+  approvalSignature?: string;
   safety: SafetyEvaluation;
   status: 'pending_confirmation' | 'approved' | 'rejected' | 'executing' | 'completed' | 'failed';
 }

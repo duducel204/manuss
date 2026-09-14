@@ -12,3 +12,5 @@ results/
 *.gguf
 .env
 *.log
+node_modules/
+dist/

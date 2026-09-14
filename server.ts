@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import dotenv from 'dotenv';
+import crypto from 'crypto';
 import { createServer as createViteServer } from 'vite';
 import { checkMCPHealth, executeTermuxExec, getMCPConfig } from './server/mcpClient.js';
 import { processUserMessage, continueWithToolResult } from './server/geminiService.js';
@@ -10,6 +11,23 @@ dotenv.config();
 
 const app = express();
 const PORT = 3000;
+const APPROVAL_SIGNING_KEY = process.env.APPROVAL_SIGNING_KEY || process.env.GEMINI_API_KEY || 'development-only-approval-key';
+
+function signToolProposal(toolCall: { id: string; name: string; command: string; timeout_seconds?: number }): string {
+  const payload = JSON.stringify({
+    id: toolCall.id,
+    name: toolCall.name,
+    command: toolCall.command,
+    timeout_seconds: toolCall.timeout_seconds || 120,
+  });
+  return crypto.createHmac('sha256', APPROVAL_SIGNING_KEY).update(payload).digest('hex');
+}
+
+function hasValidToolProposalSignature(toolCall: any, signature: unknown): boolean {
+  if (!toolCall || typeof signature !== 'string') return false;
+  const expected = signToolProposal(toolCall);
+  return signature.length === expected.length && crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+}
 
 app.use(express.json());
 
@@ -78,12 +96,19 @@ app.post('/api/chat', async (req, res) => {
     const result = await processUserMessage(history, message);
 
     if (result.toolCallProposal) {
+      const proposal = {
+        id: `call_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        name: result.toolCallProposal.name,
+        command: result.toolCallProposal.command,
+        timeout_seconds: result.toolCallProposal.timeout_seconds,
+      };
       res.json({
         status: 'requires_confirmation',
         text: result.text,
         toolCall: {
-          id: `call_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          ...proposal,
           ...result.toolCallProposal,
+          approvalSignature: signToolProposal(proposal),
           status: 'pending_confirmation',
         },
       });
@@ -105,15 +130,29 @@ app.post('/api/chat', async (req, res) => {
 // 3. Tool Execution via MCP (requires explicit client approval)
 app.post('/api/mcp/execute', async (req, res) => {
   try {
-    const { toolCall, history = [], userApproved } = req.body;
+    const { toolCall, history = [], userApproved, sensitiveApproved = false, approvalSignature } = req.body;
 
     if (!userApproved) {
       res.status(403).json({ error: 'Tool execution was not confirmed by user.' });
       return;
     }
 
-    if (!toolCall || !toolCall.command) {
+    if (!toolCall || toolCall.name !== 'termux_exec' || typeof toolCall.command !== 'string' || !toolCall.command.trim()) {
       res.status(400).json({ error: 'Invalid toolCall payload: command is missing.' });
+      return;
+    }
+
+    if (!hasValidToolProposalSignature(toolCall, approvalSignature)) {
+      res.status(403).json({ error: 'The command proposal is invalid or has been altered.' });
+      return;
+    }
+
+    const safety = evaluateCommandSafety(toolCall.command);
+    if (safety.isSensitive && !sensitiveApproved) {
+      res.status(403).json({
+        error: 'Sensitive command requires reinforced approval.',
+        safety,
+      });
       return;
     }
 
@@ -148,7 +187,7 @@ app.post('/api/mcp/execute', async (req, res) => {
 // 4. Quick Direct Read-only Inspection Test ("pwd && ls -la")
 app.post('/api/mcp/test-home', async (req, res) => {
   try {
-    const { userApproved = true } = req.body;
+    const { userApproved = false } = req.body;
     const command = 'pwd && ls -la';
     const safety = evaluateCommandSafety(command);
 

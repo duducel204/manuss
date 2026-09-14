@@ -146,6 +146,8 @@ O guia detalhado para o Manus está em [`docs/MANUS_TERMUX_MCP.md`](docs/MANUS_T
 
 Se a aplicação de teste for criada no Google AI Studio, use o **Build Mode** para importar este repositório pelo GitHub. Depois da importação, leia [`docs/AI_STUDIO_BUILD_MODE.md`](docs/AI_STUDIO_BUILD_MODE.md), configure os secrets somente no backend do AI Studio e use o prompt fornecido nesse guia. O arquivo reúne a arquitetura, o contrato real da ponte, o teste mínimo e os limites de segurança. Não coloque tokens MCP ou chaves da Gemini no repositório.
 
+O cliente web gerado pelo AI Studio usa o Gemini function calling para propor comandos e um cliente MCP JSON-RPC no backend para executar `termux_exec`. Cada proposta recebe uma assinatura server-side; o endpoint de execução revalida a assinatura, a ferramenta, o comando e a avaliação de segurança antes de chamar o Termux. O navegador não pode transformar uma proposta em outro comando. Para publicar a aplicação fora de um ambiente privado, adicione autenticação de usuário ou restrinja o acesso no provedor de hospedagem; o Bearer token do MCP não substitui a autenticação da interface web.
+
 ## Etapa 2 — Preparar o tradutor local
 
 Só comece esta etapa depois que a ponte estiver conectada e validada. A IA poderá conduzir a preparação pelo MCP, ou você poderá usar os scripts diretamente no Termux.
