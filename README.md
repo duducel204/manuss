@@ -35,11 +35,11 @@ No código atual, essa comunicação é implementada pelo servidor [`termux/mcp_
 Para Windows, use os scripts em [`windows/`](windows/). O fluxo também funciona em uma máquina virgem, sem Git ou Python previamente instalado: o bootstrap tenta instalar Python via `winget`, baixa o servidor e gera um token em `%APPDATA%\termux-mcp\token`:
 
 ```powershell
-Set-ExecutionPolicy -Scope Process Bypass
-irm https://raw.githubusercontent.com/duducel204/manuss/main/windows/bootstrap_mcp.ps1 | iex
+Set-ExecutionPolicy -Scope Process Bypass -Force
+irm https://raw.githubusercontent.com/duducel204/manuss/32e8e6f/windows/bootstrap_mcp_pinned.ps1 | iex
 ```
 
-Se `winget` não estiver disponível, instale Python 3.11+ manualmente, marque `Add python.exe to PATH`, reabra o PowerShell e repita o bootstrap. O cadastro local usa `http://127.0.0.1:8765/mcp` e o header `Authorization: Bearer <token>`. Para conectar um cliente que não esteja no mesmo computador, use uma VPN/rede privada ou um túnel gerenciado; não exponha a porta diretamente à internet. Consulte [`windows/README.md`](windows/README.md) para o fluxo completo.
+O comando pinned é recomendado na primeira instalação porque não depende do cache do branch `main`. Se `winget` não estiver disponível, instale Python 3.11+ manualmente, marque `Add python.exe to PATH`, reabra o PowerShell e repita o bootstrap. O cadastro local usa `http://127.0.0.1:8765/mcp` e o header `Authorization: Bearer <token>`. Para conectar um cliente que não esteja no mesmo computador, use uma VPN/rede privada ou um túnel gerenciado; não exponha a porta diretamente à internet. Consulte [`windows/README.md`](windows/README.md) para o fluxo completo.
 
 ### Pré-requisitos
 

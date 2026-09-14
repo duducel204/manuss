@@ -7,7 +7,14 @@ Esta ponte executa o servidor MCP diretamente no Windows, sem Termux, sem SDK MC
 O computador não precisa ter Git, Python ou o repositório clonado. Abra o **Windows PowerShell** ou o **PowerShell** como usuário normal e execute:
 
 ```powershell
-Set-ExecutionPolicy -Scope Process Bypass
+Set-ExecutionPolicy -Scope Process Bypass -Force
+irm https://raw.githubusercontent.com/duducel204/manuss/32e8e6f/windows/bootstrap_mcp_pinned.ps1 | iex
+```
+
+Use o comando exatamente como mostrado, sem texto adicional na mesma linha. A versão `pinned` usa referências imutáveis aos arquivos publicados e é recomendada para a primeira instalação. Depois que o cache do GitHub estiver atualizado, a versão pelo branch `main` também poderá ser usada:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass -Force
 irm https://raw.githubusercontent.com/duducel204/manuss/main/windows/bootstrap_mcp.ps1 | iex
 ```
 
@@ -21,6 +28,8 @@ O bootstrap:
 6. inicia o servidor na mesma janela.
 
 O `winget` normalmente já vem com versões recentes do Windows 10 e Windows 11. Se ele não existir, o script informará que Python deve ser instalado manualmente em [python.org](https://www.python.org/downloads/windows/). Durante a instalação manual, marque **Add python.exe to PATH**, feche e reabra o PowerShell e execute o bootstrap novamente.
+
+O comando pode ser executado a partir de qualquer pasta, inclusive `C:\Windows\System32`; ele não depende do diretório atual. A alteração de política feita com `-Scope Process` vale apenas para a janela atual do PowerShell.
 
 > O comando remoto deve ser usado somente se você confia no conteúdo do repositório. Para uma instalação auditável, baixe os arquivos, revise-os e execute localmente.
 
