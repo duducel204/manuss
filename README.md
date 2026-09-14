@@ -144,6 +144,8 @@ O resultado esperado é uma saída contendo `MCP conectado` e o diretório HOME 
 
 O guia detalhado para o Manus está em [`docs/MANUS_TERMUX_MCP.md`](docs/MANUS_TERMUX_MCP.md). O servidor usa apenas a biblioteca padrão do Python para evitar dependências frágeis do SDK MCP em Termux/aarch64.
 
+Se a aplicação de teste for criada no Google AI Studio, use o **Build Mode** para importar este repositório pelo GitHub. Depois da importação, leia [`docs/AI_STUDIO_BUILD_MODE.md`](docs/AI_STUDIO_BUILD_MODE.md), configure os secrets somente no backend do AI Studio e use o prompt fornecido nesse guia. O arquivo reúne a arquitetura, o contrato real da ponte, o teste mínimo e os limites de segurança. Não coloque tokens MCP ou chaves da Gemini no repositório.
+
 ## Etapa 2 — Preparar o tradutor local
 
 Só comece esta etapa depois que a ponte estiver conectada e validada. A IA poderá conduzir a preparação pelo MCP, ou você poderá usar os scripts diretamente no Termux.
@@ -193,6 +195,7 @@ A ponte executa comandos arbitrários no shell do usuário. Ela deve ser usada a
 
 - [`MANUS.md`](MANUS.md) — instruções para o Manus conduzir o usuário.
 - [`docs/MANUS_TERMUX_MCP.md`](docs/MANUS_TERMUX_MCP.md) — onboarding detalhado da ponte MCP.
+- [`docs/AI_STUDIO_BUILD_MODE.md`](docs/AI_STUDIO_BUILD_MODE.md) — guia para importar o repositório e criar o cliente Gemini no AI Studio.
 - [`docs-termux-mcp.md`](docs-termux-mcp.md) — referência operacional da ponte.
 - [`termux/mcp_server.py`](termux/mcp_server.py) — servidor MCP JSON-RPC.
 - [`termux/setup_mcp.sh`](termux/setup_mcp.sh) — instalador da ponte usado pelo bootstrap.
