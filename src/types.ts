@@ -11,6 +11,7 @@ export interface ToolCallProposal {
   approvalSignature?: string;
   safety: SafetyEvaluation;
   status: 'pending_confirmation' | 'approved' | 'rejected' | 'executing' | 'completed' | 'failed';
+  modelTurnParts?: any[];
 }
 
 export interface TermuxExecResult {
@@ -30,6 +31,7 @@ export interface ChatMessage {
   timestamp: number;
   toolCall?: ToolCallProposal;
   toolResult?: TermuxExecResult;
+  suggestions?: string[];
   error?: string;
 }
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Terminal, Shield, RefreshCw, HelpCircle, CheckCircle2, AlertCircle, Clock, Zap } from 'lucide-react';
+import { Terminal, Shield, RefreshCw, HelpCircle, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
 import { BridgeConfigStatus } from '../types';
 
 interface HeaderProps {
@@ -7,8 +7,6 @@ interface HeaderProps {
   checking: boolean;
   onRefreshStatus: () => void;
   onOpenSetup: () => void;
-  onQuickTest: () => void;
-  executingTest: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -16,8 +14,6 @@ export const Header: React.FC<HeaderProps> = ({
   checking,
   onRefreshStatus,
   onOpenSetup,
-  onQuickTest,
-  executingTest,
 }) => {
   const getStatusBadge = () => {
     if (!status || checking) {
@@ -118,18 +114,6 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Right Controls */}
         <div className="flex items-center flex-wrap gap-2">
           {getStatusBadge()}
-
-          {/* Quick Read-only HOME Test Button */}
-          <button
-            id="btn-quick-home-test"
-            onClick={onQuickTest}
-            disabled={executingTest}
-            title="Execute non-destructive read-only verification: pwd && ls -la"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-800/80 transition-colors disabled:opacity-50"
-          >
-            <Zap className={`w-3.5 h-3.5 ${executingTest ? 'animate-bounce text-cyan-400' : 'text-cyan-400'}`} />
-            {executingTest ? 'Testing...' : 'Test HOME Directory'}
-          </button>
 
           {/* Refresh Connection Button */}
           <button

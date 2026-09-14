@@ -4,7 +4,13 @@ import dotenv from 'dotenv';
 import crypto from 'crypto';
 import { createServer as createViteServer } from 'vite';
 import { checkMCPHealth, executeTermuxExec, getMCPConfig } from './server/mcpClient.js';
-import { processUserMessage, continueWithToolResult } from './server/geminiService.js';
+import {
+  processUserMessage,
+  continueWithToolResult,
+  extractSuggestionsFromText,
+  isQuotaOrRateLimitError,
+  matchLocalTermuxIntent,
+} from './server/geminiService.js';
 import { evaluateCommandSafety } from './server/safety.js';
 
 dotenv.config();
@@ -105,6 +111,7 @@ app.post('/api/chat', async (req, res) => {
       res.json({
         status: 'requires_confirmation',
         text: result.text,
+        suggestions: result.suggestions || [],
         toolCall: {
           ...proposal,
           ...result.toolCallProposal,
@@ -118,9 +125,26 @@ app.post('/api/chat', async (req, res) => {
     res.json({
       status: 'completed',
       text: result.text || 'Message processed.',
+      suggestions: result.suggestions || [],
     });
   } catch (err: any) {
-    console.error('[API /api/chat error]', err);
+    console.error('[API /api/chat error]', err.message || err);
+
+    if (isQuotaOrRateLimitError(err)) {
+      // Graceful fallback response on quota exhaustion
+      res.status(200).json({
+        status: 'completed',
+        text: 'A cota diária gratuita do modelo de IA atingiu o limite temporário da Google. Você pode continuar operando o seu Termux normalmente usando os atalhos de sugestões abaixo ou digitando comandos como *"Como está a bateria?"*, *"Verifique espaço em disco"* ou comandos bash diretos.',
+        suggestions: [
+          'Verifique meu diretório HOME do Termux e liste os arquivos e diretórios que estão nele, sem modificar nada.',
+          'Como está a bateria do meu celular?',
+          'Verifique espaço em disco (df -h) e memória RAM livre (free -h)',
+          'Quais pacotes estão instalados no Termux?',
+        ],
+      });
+      return;
+    }
+
     res.status(500).json({
       error: err.message || 'Internal error processing chat message with Gemini.',
     });
@@ -163,18 +187,23 @@ app.post('/api/mcp/execute', async (req, res) => {
 
     // Pass result back into Gemini for analytical synthesis
     let explanation = '';
+    let suggestions: string[] = [];
     if (process.env.GEMINI_API_KEY) {
       try {
-        explanation = await continueWithToolResult(history, toolCall, toolResult);
+        const contResult = await continueWithToolResult(history, toolCall, toolResult);
+        explanation = contResult.text;
+        suggestions = contResult.suggestions;
       } catch (geminiErr: any) {
         console.warn('[Gemini continuation error]', geminiErr.message);
         explanation = `Command finished with exit code ${toolResult.exit_code}. Output:\n${toolResult.stdout || toolResult.stderr}`;
+        suggestions = extractSuggestionsFromText(explanation, toolCall.command);
       }
     }
 
     res.json({
       toolResult,
       explanation,
+      suggestions,
     });
   } catch (err: any) {
     console.error('[API /api/mcp/execute error]', err);

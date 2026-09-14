@@ -6,19 +6,24 @@ import { ExecutionResultCard } from './components/ExecutionResultCard';
 import { ChatInput } from './components/ChatInput';
 import { SetupModal } from './components/SetupModal';
 import { BridgeConfigStatus, ChatMessage, ToolCallProposal, TermuxExecResult } from './types';
-import { Bot, User, Terminal, Info, AlertTriangle, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Bot, User, Terminal, Info, AlertTriangle, ShieldCheck, CheckCircle2, Sparkles } from 'lucide-react';
 
 const INITIAL_MESSAGES: ChatMessage[] = [
   {
     id: 'welcome-1',
     role: 'assistant',
-    content: `Olá! Sou seu assistente conectado à ponte MCP pessoal do Termux (**termux_pessoal**).
+    content: `Olá! Sou seu assistente para o Android Termux conectado via ponte MCP (**termux_pessoal**).
 
-Posso verificar o estado do seu dispositivo e executar diagnósticos usando a ferramenta oficial **termux_exec**.
+Você pode conversar comigo em **linguagem natural** em português (ex: *"Como está a bateria do celular?"*, *"Verifique espaço em disco e memória livre"*, *"Liste scripts no HOME"*) e eu identificarei os comandos adequados do Termux.
 
-Por segurança, **nenhum comando é executado sem sua autorização explícita**. Você pode começar pelo teste mínimo recomendado clicando no botão **"Test HOME Directory"** acima ou enviando:
-> *"Verifique meu diretório HOME do Termux e liste os arquivos e diretórios que estão nele, sem modificar nada."*`,
+🔒 **Segurança Ativa**: Cada comando requer sua confirmação prévia antes de ser executado no dispositivo.`,
     timestamp: Date.now(),
+    suggestions: [
+      'Verifique meu diretório HOME do Termux e liste os arquivos e diretórios que estão nele, sem modificar nada.',
+      'Como está a bateria do meu celular?',
+      'Verifique espaço em disco (df -h) e memória RAM livre (free -h)',
+      'Quais pacotes estão instalados no Termux?',
+    ],
   },
 ];
 
@@ -103,9 +108,10 @@ export default function App() {
         const assistantMsg: ChatMessage = {
           id: `asst_${Date.now()}`,
           role: 'assistant',
-          content: data.text || 'Preparei o comando abaixo para verificar seu Termux. Por favor, confirme a execução:',
+          content: data.text || 'Preparei o comando abaixo para executar no seu Termux:',
           timestamp: Date.now(),
           toolCall: data.toolCall,
+          suggestions: data.suggestions,
         };
         setMessages((prev) => [...prev, assistantMsg]);
       } else {
@@ -114,6 +120,7 @@ export default function App() {
           role: 'assistant',
           content: data.text || 'Resposta concluída.',
           timestamp: Date.now(),
+          suggestions: data.suggestions,
         };
         setMessages((prev) => [...prev, assistantMsg]);
       }
@@ -187,6 +194,7 @@ export default function App() {
             role: 'assistant',
             content: data.explanation,
             timestamp: Date.now(),
+            suggestions: data.suggestions,
           },
         ]);
       }
@@ -248,11 +256,6 @@ export default function App() {
     ]);
   };
 
-  // Quick Test Action: "Verifique meu diretório HOME do Termux e liste os arquivos e diretórios que estão nele, sem modificar nada."
-  const handleQuickTest = () => {
-    handleSendMessage('Verifique meu diretório HOME do Termux e liste os arquivos e diretórios que estão nele, sem modificar nada.');
-  };
-
   return (
     <div className="flex flex-col min-h-screen bg-neutral-950 text-neutral-100">
       {/* Header */}
@@ -261,8 +264,6 @@ export default function App() {
         checking={checkingStatus}
         onRefreshStatus={fetchStatus}
         onOpenSetup={() => setSetupModalOpen(true)}
-        onQuickTest={handleQuickTest}
-        executingTest={isLoading || executingToolId !== null}
       />
 
       {/* Dynamic Status / Diagnostics Warning */}
@@ -328,6 +329,31 @@ export default function App() {
                   result={msg.toolResult}
                   toolName={msg.toolCall?.name || 'termux_exec'}
                 />
+              )}
+
+              {/* Dynamic Suggestions Chips */}
+              {msg.suggestions && msg.suggestions.length > 0 && (
+                <div className="mt-3 pt-2.5 border-t border-neutral-800/80">
+                  <div className="text-[11px] font-medium text-neutral-400 flex items-center gap-1.5 mb-2">
+                    <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Sugestões de comandos e próximos passos:</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {msg.suggestions.map((sug, sIdx) => (
+                      <button
+                        key={sIdx}
+                        id={`msg-suggestion-${msg.id}-${sIdx}`}
+                        type="button"
+                        onClick={() => handleSendMessage(sug)}
+                        disabled={isLoading || executingToolId !== null}
+                        className="text-left text-xs px-2.5 py-1.5 rounded-lg bg-neutral-950/90 hover:bg-cyan-950/80 text-cyan-300 hover:text-cyan-200 border border-neutral-800 hover:border-cyan-700/60 transition-colors disabled:opacity-50 cursor-pointer flex items-center gap-1.5 shadow-sm"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />
+                        <span>{sug}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
 
               {/* Timestamp */}
