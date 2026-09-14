@@ -24,10 +24,12 @@ O bootstrap:
 2. verifica se Python 3.11+ está disponível;
 3. tenta instalar Python 3.12 com `winget`, se necessário;
 4. baixa o servidor MCP;
-5. gera um token local;
-6. inicia o servidor na mesma janela.
+5. baixa o `cloudflared` oficial adequado à arquitetura do Windows;
+6. gera um token local;
+7. inicia o servidor MCP e o túnel HTTPS na mesma janela;
+8. exibe automaticamente a URL pública terminada em `/mcp`.
 
-O `winget` normalmente já vem com versões recentes do Windows 10 e Windows 11. Se ele não existir, o script informará que Python deve ser instalado manualmente em [python.org](https://www.python.org/downloads/windows/). Durante a instalação manual, marque **Add python.exe to PATH**, feche e reabra o PowerShell e execute o bootstrap novamente.
+O `winget` normalmente já vem com versões recentes do Windows 10 e Windows 11. Se ele não existir, o script informará que Python deve ser instalado manualmente em [python.org](https://www.python.org/downloads/windows/). Durante a instalação manual, marque **Add python.exe to PATH**, feche e reabra o PowerShell e execute o bootstrap novamente. O `cloudflared` é baixado automaticamente pelo instalador; não é necessário instalá-lo pelo `winget`.
 
 O comando pode ser executado a partir de qualquer pasta, inclusive `C:\Windows\System32`; ele não depende do diretório atual. A alteração de política feita com `-Scope Process` vale apenas para a janela atual do PowerShell.
 
@@ -90,15 +92,15 @@ Execute no meu Windows: git status --short
 
 Git não é necessário para a ponte MCP; ele só será necessário se você quiser operar projetos que usem Git.
 
-## Acesso remoto opcional
+## Acesso remoto
 
-Não exponha a porta `8765` diretamente à internet. Para um cliente em outro dispositivo, use uma VPN, rede privada ou túnel gerenciado. Para um teste temporário, com `cloudflared` instalado:
+O `start_mcp.ps1` inicia automaticamente um Cloudflare Quick Tunnel e mostra uma linha como:
 
-```powershell
-cloudflared tunnel --url http://127.0.0.1:8765
+```text
+URL MCP pública: https://algum-nome.trycloudflare.com/mcp
 ```
 
-Use a URL pública terminada em `/mcp`, mantenha o token secreto e lembre-se de que a URL do Quick Tunnel é temporária.
+Use essa URL e o header Bearer no cliente MCP. Mantenha a janela aberta; encerrar o script encerra o servidor e o túnel. A URL é temporária e pode mudar quando a ponte for reiniciada. Não exponha a porta `8765` diretamente à internet.
 
 ## Segurança
 
@@ -107,6 +109,7 @@ A ferramenta executa comandos arbitrários no PowerShell do usuário. Comece com
 ## Diagnóstico rápido
 
 - **Python não encontrado:** instale Python 3.11+ e marque `Add python.exe to PATH`, ou instale o App Installer/`winget`.
+- **Túnel não inicia:** confira `%LOCALAPPDATA%\manuss-mcp\cloudflared.err.log` e tente executar novamente o setup com acesso à internet.
 - **Comando não reconhecido após instalar Python:** feche e abra o PowerShell novamente.
 - **HTTP 401:** o token cadastrado não corresponde ao arquivo `%APPDATA%\termux-mcp\token`.
 - **HTTP 404:** a URL precisa terminar exatamente em `/mcp`.
