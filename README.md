@@ -41,6 +41,10 @@ A tradução offline ainda está em avaliação. O Argos Translate não funciono
 
 Os scripts de instalação e execução ficam em [`termux/`](termux/). Modelos Whisper, caches, áudios e credenciais não devem ser versionados.
 
+### Ponte pessoal Manus → Termux
+
+O projeto também contém um servidor MCP pessoal para executar comandos no próprio Termux a partir do Manus. Ele escuta somente em localhost e pode ser publicado por um túnel de saída. Consulte o [guia da ponte MCP](docs-termux-mcp.md), o [servidor Python](termux/mcp_server.py) e o [instalador](termux/setup_mcp.sh). O hostname do túnel e os tokens são configurados apenas localmente e nunca devem ser versionados.
+
 ## Divisão entre agente local e serviço online
 
 ### Agente local
