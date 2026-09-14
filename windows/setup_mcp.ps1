@@ -47,9 +47,16 @@ $TokenFile = Join-Path $TokenDir "token"
 $PythonPathFile = Join-Path $AppDir "python-path.txt"
 $CloudflaredFile = Join-Path $AppDir "cloudflared.exe"
 $ServerFile = Join-Path $AppDir "mcp_server.py"
+$LocalSetupFile = Join-Path $AppDir "setup_mcp.ps1"
+$LocalStartFile = Join-Path $AppDir "start_mcp.ps1"
 
 New-Item -ItemType Directory -Force -Path $AppDir, $TokenDir | Out-Null
 Set-Content -Path $PythonPathFile -Value $pythonInfo.Path -Encoding ascii
+
+$bundledSetup = Join-Path $PSScriptRoot "setup_mcp.ps1"
+$bundledStart = Join-Path $PSScriptRoot "start_mcp.ps1"
+if (Test-Path $bundledSetup) { Copy-Item -Force $bundledSetup $LocalSetupFile }
+if (Test-Path $bundledStart) { Copy-Item -Force $bundledStart $LocalStartFile }
 
 if ($ServerSource -match '^https?://') { Write-Host "Baixando o servidor MCP..."; Invoke-WebRequest -UseBasicParsing -Uri $ServerSource -OutFile $ServerFile }
 else { if (-not (Test-Path $ServerSource)) { throw "Arquivo do servidor não encontrado: $ServerSource" }; Copy-Item -Force $ServerSource $ServerFile }

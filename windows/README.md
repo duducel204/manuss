@@ -8,7 +8,7 @@ O computador não precisa ter Git, Python ou o repositório clonado. Abra o **Wi
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass -Force
-irm https://raw.githubusercontent.com/duducel204/manuss/7e45e491994586d7cb9bb8247816dade7234bed8/windows/bootstrap_mcp_pinned.ps1 | iex
+irm https://raw.githubusercontent.com/duducel204/manuss/2c6d954/windows/bootstrap_mcp_pinned.ps1 | iex
 ```
 
 Use o comando exatamente como mostrado, sem texto adicional na mesma linha. A versão `pinned` usa referências imutáveis aos arquivos publicados e é recomendada para a primeira instalação. Depois que o cache do GitHub estiver atualizado, a versão pelo branch `main` também poderá ser usada:
@@ -32,6 +32,23 @@ O bootstrap:
 O `winget` normalmente já vem com versões recentes do Windows 10 e Windows 11. Se ele não existir, o script informará que Python deve ser instalado manualmente em [python.org](https://www.python.org/downloads/windows/). Durante a instalação manual, marque **Add python.exe to PATH**, feche e reabra o PowerShell e execute o bootstrap novamente. O `cloudflared` é baixado automaticamente pelo instalador; não é necessário instalá-lo pelo `winget`.
 
 O comando pode ser executado a partir de qualquer pasta, inclusive `C:\Windows\System32`; ele não depende do diretório atual. A alteração de política feita com `-Scope Process` vale apenas para a janela atual do PowerShell.
+
+## Inicialização única depois da configuração
+
+Depois que o servidor, o token e o `cloudflared` já estiverem instalados, não é necessário iniciar dois processos manualmente. Execute apenas:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass -Force
+& "$env:LOCALAPPDATA\manuss-mcp\start_mcp.ps1"
+```
+
+Para instalações feitas pelo bootstrap remoto, o arquivo de inicialização é baixado temporariamente. Nesse caso, use:
+
+```powershell
+& "$env:TEMP\manuss-mcp-bootstrap\start_mcp.ps1"
+```
+
+O script inicia o servidor MCP, inicia o Cloudflare Quick Tunnel, aguarda a URL pública, imprime a URL terminada em `/mcp` e encerra os dois processos juntos quando a janela for fechada ou interrompida. Se os arquivos locais ainda não existirem, ele executa o setup automaticamente.
 
 > O comando remoto deve ser usado somente se você confia no conteúdo do repositório. Para uma instalação auditável, baixe os arquivos, revise-os e execute localmente.
 
@@ -57,6 +74,14 @@ Token:    %APPDATA%\termux-mcp\token
 ```
 
 O token é gerado aleatoriamente e não deve ser enviado ao GitHub, incluído em chamados ou publicado em mensagens públicas.
+
+## Histórico da adaptação Windows
+
+O projeto começou com uma ponte voltada ao Termux. O servidor foi tornado multiplataforma para executar Bash no Termux e PowerShell no Windows, mantendo o mesmo transporte MCP via HTTP/JSON-RPC, o endpoint `POST /mcp`, o `GET /health`, o Bearer token e a ferramenta compatível `termux_exec`.
+
+Durante a configuração em um Windows sem ambiente pronto, o bootstrap foi ampliado para instalar Python quando necessário, ignorar os aliases `python.exe`/`py.exe` da Microsoft Store, persistir o caminho real do Python, baixar o `cloudflared` adequado à arquitetura e iniciar servidor e túnel juntos. A conexão foi validada no Manus pelo conector **Windows pessoal**, com `termux_exec` executando `Write-Output MCP-conectado; Get-Location` e retornando `C:\Users\Gigabyte`.
+
+Não coloque neste README a URL específica do Quick Tunnel nem o Bearer token. A URL é temporária e o token é uma credencial local.
 
 ## Conexão local
 

@@ -36,10 +36,12 @@ Para Windows, use os scripts em [`windows/`](windows/). O fluxo também funciona
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass -Force
-irm https://raw.githubusercontent.com/duducel204/manuss/7e45e491994586d7cb9bb8247816dade7234bed8/windows/bootstrap_mcp_pinned.ps1 | iex
+irm https://raw.githubusercontent.com/duducel204/manuss/2c6d954/windows/bootstrap_mcp_pinned.ps1 | iex
 ```
 
 O comando pinned é recomendado na primeira instalação porque não depende do cache do branch `main`. Se `winget` não estiver disponível, instale Python 3.11+ manualmente, marque `Add python.exe to PATH`, reabra o PowerShell e repita o bootstrap. O instalador também baixa o `cloudflared` e o `start_mcp.ps1` inicia automaticamente o túnel HTTPS, exibindo a URL pública terminada em `/mcp`. Consulte [`windows/README.md`](windows/README.md) para o fluxo completo.
+
+Depois da configuração, a inicialização diária é feita com um único script: `start_mcp.ps1` inicia o servidor MCP e o Cloudflare Quick Tunnel juntos, aguarda a URL pública e a imprime para o cadastro no Manus. A conexão Windows foi validada neste projeto pelo conector **Windows pessoal**, usando `termux_exec` para executar comandos PowerShell e consultar `C:\Users\Gigabyte`. URLs temporárias e tokens não são registrados na documentação.
 
 ### Pré-requisitos
 
