@@ -3,6 +3,8 @@ set -Eeuo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TEST_HOME="$(mktemp -d)"
+TEST_TMP="$TEST_HOME/tmp"
+mkdir -p "$TEST_TMP"
 MOCK_BIN="$TEST_HOME/mock-bin"
 cleanup() { rm -rf "$TEST_HOME"; }
 trap cleanup EXIT
@@ -40,7 +42,7 @@ cp "$ROOT_DIR/termux/setup_command.sh" "$HOME/setup_command_sssystem.sh"
 chmod +x "$HOME/wizard_tradutor_termux.sh" "$HOME/setup_command_sssystem.sh"
 
 printf '[3/6] Executando configuração do SSSystem...\n'
-bash "$HOME/setup_command_sssystem.sh" >/tmp/sssystem-setup-test.out
+bash "$HOME/setup_command_sssystem.sh" >"$TEST_TMP/sssystem-setup-test.out"
 [ -x "$HOME/bin/SSSystem" ]
 [ -f "$HOME/.bashrc" ]
 grep -q 'export PATH="\$HOME/bin:\$PATH"' "$HOME/.bashrc"
@@ -51,9 +53,9 @@ cp "$MOCK_BIN/python" "$HOME/tradutor-local/.venv/bin/python"
 cp "$MOCK_BIN/python" "$HOME/tradutor-local/bin/whisper-cli"
 printf 'modelo mock\n' > "$HOME/tradutor-local/models/ggml-base.bin"
 chmod +x "$HOME/tradutor-local/.venv/bin/python" "$HOME/tradutor-local/bin/whisper-cli"
-printf '1\n8\n' | bash "$HOME/bin/SSSystem" >/tmp/sssystem-run-test.out
- grep -q 'ASSISTENTE DO PROTÓTIPO LOCAL' /tmp/sssystem-run-test.out
- grep -q 'Suporte e solução de erros' /tmp/sssystem-run-test.out
+printf '1\n8\n' | bash "$HOME/bin/SSSystem" >"$TEST_TMP/sssystem-run-test.out"
+ grep -q 'ASSISTENTE DO PROTÓTIPO LOCAL' "$TEST_TMP/sssystem-run-test.out"
+ grep -q 'Suporte e solução de erros' "$TEST_TMP/sssystem-run-test.out"
 [ -f "$HOME/tradutor-local/state/environment.ready" ]
 [ -f "$HOME/tradutor-local/state/whisper.ready" ]
 
@@ -68,5 +70,5 @@ printf '[6/6] Verificando idempotência do setup...\n'
 bash "$HOME/setup_command_sssystem.sh" >/dev/null
 [ "$(grep -cF 'export PATH="$HOME/bin:$PATH"' "$HOME/.bashrc")" -eq 1 ]
 
-rm -f /tmp/sssystem-setup-test.out /tmp/sssystem-run-test.out
+rm -f "$TEST_TMP/sssystem-setup-test.out" "$TEST_TMP/sssystem-run-test.out"
 printf 'OK — scripts, wizard e SSSystem passaram no teste simulado.\n'
