@@ -24,7 +24,9 @@ chmod +x ~/setup_mcp.sh
 ~/setup_mcp.sh
 ```
 
-O instalador cria o código em `~/tradutor-local/mcp`, instala o SDK oficial Python do MCP e gera um token pessoal em `~/.config/termux-mcp/token`.
+O instalador cria o código em `~/tradutor-local/mcp` e gera um token pessoal em `~/.config/termux-mcp/token`. O servidor usa somente a biblioteca padrão do Python; portanto, não instala `mcp`, `uvicorn`, Rust nem extensões nativas.
+
+Essa escolha é intencional: o SDK oficial Python do MCP puxa `rpds-py`, que pode tentar compilar Rust para `aarch64-unknown-linux-android`, alvo que não está disponível em algumas instalações do Termux.
 
 ## Túnel persistente
 
@@ -90,4 +92,4 @@ O servidor executa comandos arbitrários porque o objetivo é uso pessoal no pr�
 
 ## Desenvolvimento
 
-A implementação usa o [SDK oficial Python do MCP](https://py.sdk.modelcontextprotocol.io/) e o transporte Streamable HTTP. O código principal está em [`termux/mcp_server.py`](termux/mcp_server.py), o instalador em [`termux/setup_mcp.sh`](termux/setup_mcp.sh) e as dependências em [`termux/requirements-mcp.txt`](termux/requirements-mcp.txt).
+A implementação segue o formato JSON-RPC do transporte Streamable HTTP e usa apenas a biblioteca padrão do Python para maximizar a compatibilidade com Termux/aarch64. O código principal está em [`termux/mcp_server.py`](termux/mcp_server.py), o instalador em [`termux/setup_mcp.sh`](termux/setup_mcp.sh) e a declaração de dependências em [`termux/requirements-mcp.txt`](termux/requirements-mcp.txt).

@@ -30,16 +30,12 @@ fi
 curl -fL --retry 3 "$RAW_BASE/mcp_server.py" -o "$MCP_DIR/server.py"
 curl -fL --retry 3 "$RAW_BASE/requirements-mcp.txt" -o "$MCP_DIR/requirements.txt"
 
-[ -x "$APP_DIR/.venv/bin/python" ] || python -m venv "$APP_DIR/.venv"
-"$APP_DIR/.venv/bin/python" -m pip install --upgrade pip
-"$APP_DIR/.venv/bin/python" -m pip install -r "$MCP_DIR/requirements.txt"
-
 cat > "$MCP_DIR/run_server.sh" <<'SH'
 #!/data/data/com.termux/files/usr/bin/bash
 set -Eeuo pipefail
 APP_DIR="${HOME}/tradutor-local"
 export TERMUX_MCP_TOKEN_FILE="${HOME}/.config/termux-mcp/token"
-exec "$APP_DIR/.venv/bin/python" "$APP_DIR/mcp/server.py"
+exec python "$APP_DIR/mcp/server.py"
 SH
 chmod +x "$MCP_DIR/run_server.sh"
 

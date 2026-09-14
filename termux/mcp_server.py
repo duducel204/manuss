@@ -1,71 +1,51 @@
 #!/usr/bin/env python3
-"""Personal MCP bridge for Termux.
+"""Minimal personal MCP Streamable HTTP server for Termux.
 
-Exposes one MCP tool, termux_exec, over Streamable HTTP at /mcp.
-The server is intended to listen only on localhost; cloudflared publishes it
-through an outbound tunnel.
+Uses only Python's standard library so it works on Termux/aarch64 without
+compiling Rust extensions. It implements the MCP methods needed by a host:
+initialize, notifications/initialized, ping, tools/list and tools/call.
 """
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import secrets
+import subprocess
+from http import HTTPStatus
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-
-from mcp.server import MCPServer
-from mcp.server.transport_security import TransportSecuritySettings
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-from starlette.responses import JSONResponse, PlainTextResponse
-from starlette.routing import Route
-import uvicorn
 
 HOST = os.getenv("TERMUX_MCP_HOST", "127.0.0.1")
 PORT = int(os.getenv("TERMUX_MCP_PORT", "8765"))
 TOKEN_FILE = Path(os.getenv("TERMUX_MCP_TOKEN_FILE", "~/.config/termux-mcp/token")).expanduser()
 MAX_OUTPUT = int(os.getenv("TERMUX_MCP_MAX_OUTPUT", "20000"))
 DEFAULT_TIMEOUT = int(os.getenv("TERMUX_MCP_TIMEOUT", "120"))
-ALLOWED_HOST = os.getenv("TERMUX_MCP_ALLOWED_HOST", "127.0.0.1")
 SHELL = os.getenv("TERMUX_MCP_SHELL", "/data/data/com.termux/files/usr/bin/bash")
+PROTOCOL_VERSION = "2025-06-18"
 
 
 def load_token() -> str:
     token = os.getenv("TERMUX_MCP_TOKEN", "").strip()
     if token:
         return token
-    try:
-        return TOKEN_FILE.read_text(encoding="utf-8").strip()
-    except FileNotFoundError as exc:
-        raise RuntimeError(f"Token ausente: crie {TOKEN_FILE}") from exc
+    return TOKEN_FILE.read_text(encoding="utf-8").strip()
 
 
-class BearerAuthMiddleware(BaseHTTPMiddleware):
-    """Require the personal bearer token for MCP and health endpoints."""
-
-    async def dispatch(self, request: Request, call_next):
-        expected = load_token()
-        supplied = request.headers.get("authorization", "")
-        if not secrets.compare_digest(supplied, f"Bearer {expected}"):
-            return JSONResponse({"error": "unauthorized"}, status_code=401)
-        return await call_next(request)
+def clip(data: bytes) -> str:
+    text = data.decode("utf-8", errors="replace")
+    return text if len(text) <= MAX_OUTPUT else text[:MAX_OUTPUT] + "\n...[saída truncada]"
 
 
-mcp = MCPServer("Termux Personal Bridge")
-
-
-@mcp.tool()
 async def termux_exec(command: str, timeout_seconds: int = DEFAULT_TIMEOUT) -> dict[str, Any]:
-    """Execute one shell command in the user's Termux and return stdout, stderr and exit code."""
+    """Execute a shell command in Termux and return stdout, stderr and exit code."""
     command = command.strip()
     if not command:
         raise ValueError("command não pode ser vazio")
     timeout_seconds = max(1, min(int(timeout_seconds), 300))
-
     process = await asyncio.create_subprocess_exec(
-        SHELL,
-        "-lc",
-        command,
+        SHELL, "-lc", command,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
         cwd=os.path.expanduser("~"),
@@ -77,11 +57,6 @@ async def termux_exec(command: str, timeout_seconds: int = DEFAULT_TIMEOUT) -> d
         process.kill()
         stdout, stderr = await process.communicate()
         timed_out = True
-
-    def clip(data: bytes) -> str:
-        text = data.decode("utf-8", errors="replace")
-        return text if len(text) <= MAX_OUTPUT else text[:MAX_OUTPUT] + "\n...[saída truncada]"
-
     return {
         "command": command,
         "exit_code": 124 if timed_out else process.returncode,
@@ -91,18 +66,131 @@ async def termux_exec(command: str, timeout_seconds: int = DEFAULT_TIMEOUT) -> d
     }
 
 
-async def health(_: Request):
-    return PlainTextResponse("ok")
+def jsonrpc_error(request_id: Any, code: int, message: str) -> dict[str, Any]:
+    return {"jsonrpc": "2.0", "id": request_id, "error": {"code": code, "message": message}}
 
 
-security = TransportSecuritySettings(
-    allowed_hosts=["127.0.0.1", "localhost", f"{ALLOWED_HOST}:*"],
-)
-app = mcp.streamable_http_app(transport_security=security)
-app.add_middleware(BearerAuthMiddleware)
-app.routes.insert(0, Route("/health", health, methods=["GET"]))
+def handle_message(message: dict[str, Any]) -> dict[str, Any] | None:
+    request_id = message.get("id")
+    method = message.get("method")
+    params = message.get("params") or {}
+
+    if not method:
+        return jsonrpc_error(request_id, -32600, "Invalid Request")
+    if method.startswith("notifications/"):
+        return None
+    if method == "initialize":
+        return {
+            "jsonrpc": "2.0", "id": request_id,
+            "result": {
+                "protocolVersion": params.get("protocolVersion", PROTOCOL_VERSION),
+                "capabilities": {"tools": {}},
+                "serverInfo": {"name": "termux-personal-bridge", "version": "1.0.0"},
+                "instructions": "Use termux_exec only when explicitly requested by the user.",
+            },
+        }
+    if method == "ping":
+        return {"jsonrpc": "2.0", "id": request_id, "result": {}}
+    if method == "tools/list":
+        return {
+            "jsonrpc": "2.0", "id": request_id,
+            "result": {"tools": [{
+                "name": "termux_exec",
+                "description": "Execute one shell command in the user's Termux and return stdout, stderr and exit code.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "command": {"type": "string", "description": "Bash command to execute in Termux."},
+                        "timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 300, "default": DEFAULT_TIMEOUT},
+                    },
+                    "required": ["command"],
+                },
+            }]},
+        }
+    if method == "tools/call":
+        if params.get("name") != "termux_exec":
+            return jsonrpc_error(request_id, -32601, "Unknown tool")
+        arguments = params.get("arguments") or {}
+        try:
+            result = asyncio.run(termux_exec(arguments.get("command", ""), arguments.get("timeout_seconds", DEFAULT_TIMEOUT)))
+            is_error = result["exit_code"] != 0
+            return {
+                "jsonrpc": "2.0", "id": request_id,
+                "result": {
+                    "isError": is_error,
+                    "content": [{"type": "text", "text": json.dumps(result, ensure_ascii=False)}],
+                    "structuredContent": result,
+                },
+            }
+        except Exception as exc:
+            return jsonrpc_error(request_id, -32000, str(exc))
+    return jsonrpc_error(request_id, -32601, f"Method not found: {method}")
+
+
+class MCPHandler(BaseHTTPRequestHandler):
+    server_version = "TermuxMCP/1.0"
+
+    def _authorized(self) -> bool:
+        supplied = self.headers.get("Authorization", "")
+        expected = f"Bearer {load_token()}"
+        return secrets.compare_digest(supplied, expected)
+
+    def _send_json(self, payload: dict[str, Any], status: int = HTTPStatus.OK) -> None:
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Mcp-Protocol-Version", PROTOCOL_VERSION)
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_GET(self) -> None:
+        if self.path == "/health":
+            if not self._authorized():
+                self._send_json({"error": "unauthorized"}, HTTPStatus.UNAUTHORIZED)
+            else:
+                self._send_json({"status": "ok"})
+            return
+        self.send_error(HTTPStatus.METHOD_NOT_ALLOWED, "MCP uses POST")
+
+    def do_POST(self) -> None:
+        if self.path.rstrip("/") != "/mcp":
+            self.send_error(HTTPStatus.NOT_FOUND)
+            return
+        try:
+            if not self._authorized():
+                self._send_json({"error": "unauthorized"}, HTTPStatus.UNAUTHORIZED)
+                return
+            length = int(self.headers.get("Content-Length", "0"))
+            message = json.loads(self.rfile.read(length))
+            response = handle_message(message)
+            if response is None:
+                self.send_response(HTTPStatus.ACCEPTED)
+                self.end_headers()
+            else:
+                self._send_json(response)
+        except json.JSONDecodeError:
+            self._send_json(jsonrpc_error(None, -32700, "Parse error"), HTTPStatus.BAD_REQUEST)
+        except Exception as exc:
+            self._send_json({"error": str(exc)}, HTTPStatus.INTERNAL_SERVER_ERROR)
+
+    def log_message(self, format: str, *args: Any) -> None:
+        print(f"[termux-mcp] {format % args}", flush=True)
+
+
+def main() -> None:
+    if not Path(SHELL).exists():
+        raise SystemExit(f"Shell não encontrado: {SHELL}")
+    load_token()
+    server = ThreadingHTTPServer((HOST, PORT), MCPHandler)
+    print(f"Termux MCP ouvindo em http://{HOST}:{PORT}/mcp", flush=True)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\nTermux MCP encerrado.", flush=True)
+    finally:
+        server.server_close()
 
 
 if __name__ == "__main__":
-    print(f"Termux MCP ouvindo em http://{HOST}:{PORT}/mcp", flush=True)
-    uvicorn.run(app, host=HOST, port=PORT, log_level="info")
+    main()
