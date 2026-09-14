@@ -60,7 +60,13 @@ Considere `STATUS.md` como a fonte do estado técnico atual, `DECISIONS.md` como
 
 ## Uso rápido no Termux
 
-Para preparar um novo dispositivo, instale o Termux e o Termux:API pela mesma origem. Depois copie `termux/install.sh` para a HOME do Termux e execute:
+Para preparar um novo dispositivo, instale o Termux e o Termux:API pela mesma origem. Abra o Termux e cole este comando único:
+
+```bash
+pkg update -y; pkg install -y curl; curl -fL --retry 3 https://raw.githubusercontent.com/duducel204/manuss/main/termux/bootstrap.sh | bash
+```
+
+Esse bootstrap baixa o instalador principal e prepara automaticamente pacotes, Python, ambiente virtual, whisper.cpp, modelo, wizard e `SSSystem`. Como alternativa, copie `termux/install.sh` para a HOME do Termux e execute:
 
 ```bash
 chmod +x ~/install_tradutor_termux.sh

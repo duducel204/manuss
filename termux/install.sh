@@ -4,6 +4,7 @@ set -Eeuo pipefail
 APP_DIR="${HOME}/tradutor-local"
 WHISPER_DIR="${HOME}/whisper.cpp"
 VENV_DIR="${APP_DIR}/.venv"
+RAW_BASE="https://raw.githubusercontent.com/duducel204/manuss/main/termux"
 
 log() { printf '\n[tradutor-local] %s\n' "$1"; }
 fail() { printf '\n[tradutor-local] ERRO: %s\n' "$1" >&2; exit 1; }
@@ -13,7 +14,7 @@ command -v pkg >/dev/null 2>&1 || fail "Execute este instalador dentro do Termux
 
 log "Instalando dependências do protótipo"
 pkg update -y
-pkg install -y python git clang cmake make ffmpeg termux-api
+pkg install -y python git clang cmake make ffmpeg termux-api curl
 
 log "Criando estrutura"
 mkdir -p "$APP_DIR/audio" "$APP_DIR/models" "$APP_DIR/results" "$APP_DIR/scripts" "$APP_DIR/bin"
@@ -67,6 +68,12 @@ log "Executando verificação sem microfone"
 "$APP_DIR/bin/whisper-cli" --help >/dev/null
 "$VENV_DIR/bin/python" --version
 command -v termux-microphone-record >/dev/null 2>&1 || log "ATENÇÃO: Termux:API ainda não está disponível"
+
+log "Instalando wizard e comando SSSystem"
+curl -fL --retry 3 "$RAW_BASE/wizard.sh" -o "$HOME/wizard_tradutor_termux.sh"
+curl -fL --retry 3 "$RAW_BASE/setup_command.sh" -o "$HOME/setup_command_sssystem.sh"
+chmod +x "$HOME/wizard_tradutor_termux.sh" "$HOME/setup_command_sssystem.sh"
+"$HOME/setup_command_sssystem.sh"
 
 cat <<EOF
 
