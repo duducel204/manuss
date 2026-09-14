@@ -20,7 +20,11 @@ if ! command -v curl >/dev/null 2>&1; then
 fi
 
 printf '[tradutor-local] Baixando o instalador principal...\n'
-curl -fL --retry 3 "$RAW_BASE/install.sh" -o "$INSTALLER"
+temporary="${INSTALLER}.tmp.$$"
+rm -f "$temporary"
+curl -fL --retry 3 "$RAW_BASE/install.sh" -o "$temporary"
+[ -s "$temporary" ] || fail "O instalador baixado está vazio. Tente novamente."
+mv -f "$temporary" "$INSTALLER"
 chmod +x "$INSTALLER"
 
 exec "$INSTALLER"
