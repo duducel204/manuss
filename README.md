@@ -36,6 +36,8 @@ A tradução offline ainda está em avaliação. O Argos Translate não funciono
 - [Checklist](CHECKLIST.md)
 - [Decisões em aberto](DECISIONS-OPEN.md)
 - [Troubleshooting](TROUBLESHOOTING.md)
+- [Instruções para o Manus](MANUS.md)
+- [Onboarding da ponte MCP para outros usuários](docs/MANUS_TERMUX_MCP.md)
 
 ## Termux
 
