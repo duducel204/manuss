@@ -17,13 +17,14 @@ pkg update -y
 pkg install -y python git clang cmake make ffmpeg termux-api curl
 
 log "Criando estrutura"
-mkdir -p "$APP_DIR/audio" "$APP_DIR/models" "$APP_DIR/results" "$APP_DIR/scripts" "$APP_DIR/bin"
+mkdir -p "$APP_DIR/audio" "$APP_DIR/models" "$APP_DIR/results" "$APP_DIR/scripts" "$APP_DIR/bin" "$APP_DIR/state" "$APP_DIR/logs"
 
 log "Criando ambiente Python sem dependências de tradução"
-[ -d "$VENV_DIR" ] || python -m venv "$VENV_DIR"
+[ -x "$VENV_DIR/bin/python" ] || python -m venv "$VENV_DIR"
 
 log "Baixando ou atualizando whisper.cpp"
 if [ ! -d "$WHISPER_DIR/.git" ]; then
+  [ ! -e "$WHISPER_DIR" ] || fail "Existe um diretório sem Git em $WHISPER_DIR; mova-o ou remova-o antes de continuar."
   git clone --depth 1 https://github.com/ggml-org/whisper.cpp.git "$WHISPER_DIR"
 fi
 
@@ -69,9 +70,18 @@ log "Executando verificação sem microfone"
 "$VENV_DIR/bin/python" --version
 command -v termux-microphone-record >/dev/null 2>&1 || log "ATENÇÃO: Termux:API ainda não está disponível"
 
+download_atomically() {
+  local url="$1" destination="$2" temporary
+  temporary="${destination}.tmp.$$"
+  rm -f "$temporary"
+  curl -fL --retry 3 "$url" -o "$temporary"
+  [ -s "$temporary" ] || fail "Download vazio: $url"
+  mv -f "$temporary" "$destination"
+}
+
 log "Instalando wizard e comando SSSystem"
-curl -fL --retry 3 "$RAW_BASE/wizard.sh" -o "$HOME/wizard_tradutor_termux.sh"
-curl -fL --retry 3 "$RAW_BASE/setup_command.sh" -o "$HOME/setup_command_sssystem.sh"
+download_atomically "$RAW_BASE/wizard.sh" "$HOME/wizard_tradutor_termux.sh"
+download_atomically "$RAW_BASE/setup_command.sh" "$HOME/setup_command_sssystem.sh"
 chmod +x "$HOME/wizard_tradutor_termux.sh" "$HOME/setup_command_sssystem.sh"
 "$HOME/setup_command_sssystem.sh"
 

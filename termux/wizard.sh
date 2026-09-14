@@ -7,13 +7,53 @@ WHISPER="${APP_DIR}/bin/whisper-cli"
 MODEL="${APP_DIR}/models/ggml-base.bin"
 AUDIO_DIR="${APP_DIR}/audio"
 RESULTS_DIR="${APP_DIR}/results"
+STATE_DIR="${APP_DIR}/state"
+LOGS_DIR="${APP_DIR}/logs"
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; RESET='\033[0m'
 ok() { printf "${GREEN}[OK]${RESET} %s\n" "$1"; }
 warn() { printf "${YELLOW}[ATENÇÃO]${RESET} %s\n" "$1"; }
 err() { printf "${RED}[ERRO]${RESET} %s\n" "$1"; }
 line() { printf '%*s\n' 64 '' | tr ' ' '='; }
-ensure_dirs() { mkdir -p "$APP_DIR" "$AUDIO_DIR" "$RESULTS_DIR"; }
+ensure_dirs() { mkdir -p "$APP_DIR" "$AUDIO_DIR" "$RESULTS_DIR" "$STATE_DIR" "$LOGS_DIR"; }
+state_marker() { printf '%s/%s.ready' "$STATE_DIR" "$1"; }
+mark_state() { : > "$(state_marker "$1")"; }
+clear_state() { rm -f "$(state_marker "$1")"; }
+state_is_marked() { [ -f "$(state_marker "$1")" ]; }
+
+reconcile_state() {
+  ensure_dirs
+
+  if command -v pkg >/dev/null 2>&1 && command -v python >/dev/null 2>&1 \
+    && command -v ffmpeg >/dev/null 2>&1 && command -v ffprobe >/dev/null 2>&1 \
+    && command -v git >/dev/null 2>&1 && command -v cmake >/dev/null 2>&1 \
+    && [ -x "${VENV_DIR}/bin/python" ]; then
+    mark_state environment
+  else
+    clear_state environment
+  fi
+
+  if [ -x "$WHISPER" ] && [ -s "$MODEL" ]; then
+    mark_state whisper
+  else
+    clear_state whisper
+  fi
+
+  if [ -f "$(state_marker audio)" ] && ! find "$AUDIO_DIR" -maxdepth 1 -type f \( -name '*.m4a' -o -name '*.mp3' -o -name '*.wav' \) -print -quit 2>/dev/null | grep -q .; then
+    clear_state audio
+  fi
+
+  if [ -f "$(state_marker transcription)" ] && [ ! -s "$RESULTS_DIR/latest-transcription.txt" ]; then
+    clear_state transcription
+  fi
+}
+
+show_state() {
+  reconcile_state
+  for state in environment whisper audio transcription translation; do
+    if state_is_marked "$state"; then ok "Estado validado: $state"; else warn "Estado pendente: $state"; fi
+  done
+}
 
 check_environment() {
   line; echo "ETAPA 1 — AMBIENTE"; line
@@ -28,6 +68,7 @@ check_project() {
   [ -x "$WHISPER" ] && ok "whisper-cli encontrado" || warn "Whisper ainda não pronto"
   [ -s "$MODEL" ] && ok "Modelo base encontrado" || warn "Modelo base ainda não encontrado"
   find "$AUDIO_DIR" -maxdepth 1 -type f 2>/dev/null | head -n 5
+  show_state
 }
 
 prepare_python() {
@@ -68,6 +109,7 @@ record_audio() {
   detected=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$output" 2>/dev/null || true)
   echo "Arquivo: $output"; echo "Duração: ${detected:-desconhecida} segundos"
   [ -n "$detected" ] && awk "BEGIN { exit !($detected >= 7.0) }" || { err "Arquivo inválido ou menor que 7 segundos"; return 1; }
+  mark_state audio
   ok "Gravação real validada"
 }
 
@@ -81,12 +123,14 @@ transcribe_latest() {
   ffmpeg -y -hide_banner -loglevel error -i "$input" -ar 16000 -ac 1 -c:a pcm_s16le "$wav" || { err "Falha ao converter áudio"; return 1; }
   "$WHISPER" -m "$MODEL" -f "$wav" -l pt -otxt -of "$out" -nt -np || { err "Falha na transcrição"; return 1; }
   [ -s "$out.txt" ] || { err "Transcrição vazia"; return 1; }
+  mark_state transcription
   ok "Transcrição concluída"; cat "$out.txt"
 }
 
 translate_latest() {
   line; echo "ETAPA 7 — TRADUÇÃO"; line
   [ -s "$RESULTS_DIR/latest-transcription.txt" ] || { err "Execute a transcrição primeiro"; return 1; }
+  state_is_marked transcription || { err "A transcrição existe, mas ainda não foi validada pelo wizard"; return 1; }
   cat "$RESULTS_DIR/latest-transcription.txt"; echo
   warn "Nenhum motor de tradução offline compatível foi validado neste Termux. A tradução permanece pendente; a captura e a transcrição funcionam."
 }
@@ -100,7 +144,8 @@ diagnose() {
     if command -v "$c" >/dev/null 2>&1; then ok "$c disponível"; else err "$c ausente"; fi
   done
   [ -x "$WHISPER" ] && ok "whisper-cli encontrado" || err "whisper-cli ausente"
-  [ -s "$MODEL" ] && ok "modelo base encontrado" || err "modelo base ausente"
+  [ -s "$MODEL" ] && ok "Modelo base encontrado" || err "Modelo base ausente"
+  show_state
   echo
   echo "Áudios recentes:"
   find "$AUDIO_DIR" -maxdepth 1 -type f -printf '%TY-%Tm-%Td %TH:%TM %s bytes %p\n' 2>/dev/null | sort -r | head -n 5 || true

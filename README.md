@@ -105,6 +105,10 @@ Para preparar um novo dispositivo, instale o Termux e o Termux:API pela mesma or
 pkg update -y && pkg install -y curl && curl -fL --retry 3 https://raw.githubusercontent.com/duducel204/manuss/main/termux/bootstrap.sh | bash
 ```
 
+O fluxo começa em um Termux sem preparação. O `bootstrap.sh` baixa o instalador; o `install.sh` instala a base, reutiliza componentes já concluídos e pode ser executado novamente após uma interrupção. Ao final, `SSSystem` inicia o wizard, que verifica o ambiente e reconcilia os marcadores em `~/tradutor-local/state/`. Esses marcadores representam apenas etapas validadas pelo wizard e são removidos quando os arquivos correspondentes deixam de existir; sua presença não declara que a tradução offline está pronta.
+
+Os estados locais usados atualmente são `environment.ready`, `whisper.ready`, `audio.ready` e `transcription.ready`. O estado `translation.ready` permanece pendente até existir um motor e um teste reproduzível de tradução.
+
 Esse bootstrap baixa o instalador principal e prepara automaticamente pacotes, Python, ambiente virtual, whisper.cpp, modelo, wizard e `SSSystem`. Como alternativa, copie `termux/install.sh` para a HOME do Termux e execute:
 
 ```bash
