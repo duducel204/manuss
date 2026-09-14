@@ -1,5 +1,6 @@
 param(
-  [string]$ServerSource = "https://raw.githubusercontent.com/duducel204/manuss/main/termux/mcp_server.py"
+  [string]$ServerSource = "https://raw.githubusercontent.com/duducel204/manuss/main/termux/mcp_server.py",
+  [switch]$RotateToken
 )
 
 $ErrorActionPreference = "Stop"
@@ -54,9 +55,11 @@ if (-not $pythonInfo) {
 $AppDir = Join-Path $env:LOCALAPPDATA "manuss-mcp"
 $TokenDir = Join-Path $env:APPDATA "termux-mcp"
 $TokenFile = Join-Path $TokenDir "token"
+$PythonPathFile = Join-Path $AppDir "python-path.txt"
 $ServerFile = Join-Path $AppDir "mcp_server.py"
 
 New-Item -ItemType Directory -Force -Path $AppDir, $TokenDir | Out-Null
+Set-Content -Path $PythonPathFile -Value $pythonInfo.Path -Encoding ascii
 
 if ($ServerSource -match '^https?://') {
   Write-Host "Baixando o servidor MCP..."
@@ -70,7 +73,7 @@ if (-not (Test-Path $ServerFile) -or ((Get-Item $ServerFile).Length -lt 1000)) {
   throw "O download do servidor MCP parece incompleto."
 }
 
-if (-not (Test-Path $TokenFile)) {
+if ($RotateToken -or -not (Test-Path $TokenFile)) {
   $bytes = New-Object byte[] 32
   $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
   try { $rng.GetBytes($bytes) } finally { $rng.Dispose() }

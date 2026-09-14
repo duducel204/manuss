@@ -3,6 +3,7 @@ $ErrorActionPreference = "Stop"
 $AppDir = Join-Path $env:LOCALAPPDATA "manuss-mcp"
 $ServerFile = Join-Path $AppDir "mcp_server.py"
 $TokenFile = Join-Path $env:APPDATA "termux-mcp\token"
+$PythonPathFile = Join-Path $AppDir "python-path.txt"
 $SetupFile = Join-Path $PSScriptRoot "setup_mcp.ps1"
 
 if (-not (Test-Path $SetupFile)) {
@@ -14,20 +15,30 @@ if (-not (Test-Path $ServerFile) -or -not (Test-Path $TokenFile)) {
   & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $SetupFile
 }
 
-if (-not (Get-Command py -ErrorAction SilentlyContinue) -and -not (Get-Command python -ErrorAction SilentlyContinue)) {
-  throw "Python não está disponível nesta sessão. Feche e abra o PowerShell após a instalação e tente novamente."
+$pythonPath = $null
+if (Test-Path $PythonPathFile) {
+  $pythonPath = (Get-Content $PythonPathFile -Raw).Trim()
 }
+if (-not $pythonPath -or -not (Test-Path $pythonPath)) {
+  $python = Get-Command py -ErrorAction SilentlyContinue
+  if ($python) {
+    $pythonPath = $python.Source
+    $pythonArgs = @("-3", $ServerFile)
+  } else {
+    $python = Get-Command python -ErrorAction SilentlyContinue
+    if ($python -and $python.Source -notlike "*WindowsApps*python.exe") {
+      $pythonPath = $python.Source
+      $pythonArgs = @($ServerFile)
+    }
+  }
+} 
+
+if (-not $pythonPath -or -not (Test-Path $pythonPath)) {
+  throw "Python não está disponível. Feche e abra o PowerShell, ou execute novamente o setup após instalar Python."
+}
+if (-not $pythonArgs) { $pythonArgs = @($ServerFile) }
 if (-not (Test-Path $ServerFile)) { throw "Servidor MCP não encontrado após a instalação." }
 if (-not (Test-Path $TokenFile)) { throw "Token MCP não encontrado após a instalação." }
-
-$python = Get-Command py -ErrorAction SilentlyContinue
-if ($python) {
-  $pythonPath = $python.Source
-  $pythonArgs = @("-3", $ServerFile)
-} else {
-  $pythonPath = (Get-Command python).Source
-  $pythonArgs = @($ServerFile)
-}
 
 $env:TERMUX_MCP_TOKEN_FILE = $TokenFile
 $env:TERMUX_MCP_SHELL = (Get-Command powershell.exe).Source
