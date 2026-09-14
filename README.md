@@ -36,7 +36,7 @@ Para Windows, use os scripts em [`windows/`](windows/). O fluxo também funciona
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass -Force
-irm https://raw.githubusercontent.com/duducel204/manuss/32e8e6f/windows/bootstrap_mcp_pinned.ps1 | iex
+irm https://raw.githubusercontent.com/duducel204/manuss/6ae55e7a12685743fac35f6d0414d9af8e6a937e/windows/bootstrap_mcp_pinned.ps1 | iex
 ```
 
 O comando pinned é recomendado na primeira instalação porque não depende do cache do branch `main`. Se `winget` não estiver disponível, instale Python 3.11+ manualmente, marque `Add python.exe to PATH`, reabra o PowerShell e repita o bootstrap. O cadastro local usa `http://127.0.0.1:8765/mcp` e o header `Authorization: Bearer <token>`. Para conectar um cliente que não esteja no mesmo computador, use uma VPN/rede privada ou um túnel gerenciado; não exponha a porta diretamente à internet. Consulte [`windows/README.md`](windows/README.md) para o fluxo completo.

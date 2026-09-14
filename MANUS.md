@@ -26,7 +26,7 @@ No Windows, inclusive em uma máquina sem Git ou Python, a instalação equivale
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass -Force
-irm https://raw.githubusercontent.com/duducel204/manuss/32e8e6f/windows/bootstrap_mcp_pinned.ps1 | iex
+irm https://raw.githubusercontent.com/duducel204/manuss/6ae55e7a12685743fac35f6d0414d9af8e6a937e/windows/bootstrap_mcp_pinned.ps1 | iex
 ```
 
 O bootstrap pinned tenta instalar Python 3.12 via `winget` e pode ser executado de qualquer pasta. Se `winget` não estiver disponível, orientar a instalação manual de Python 3.11+ com `Add python.exe to PATH`, fechar e reabrir o PowerShell e repetir o comando. Nesse modo, a ferramenta `termux_exec` mantém o nome por compatibilidade, mas executa o comando no PowerShell local do Windows. Para um cliente no mesmo computador, use `http://127.0.0.1:8765/mcp`; para acesso remoto, use uma VPN ou túnel gerenciado, sem expor a porta diretamente.
