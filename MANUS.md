@@ -74,6 +74,20 @@ manus-mcp-cli tool call termux_exec \
 
 Considere a Etapa 1 concluída somente quando `termux_exec` estiver disponível e retornar `exit_code: 0`.
 
+## Ponte como infraestrutura genérica
+
+Não tratar a ponte como um recurso exclusivo do tradutor. Depois de validada, ela pode apoiar outros projetos do usuário no Termux: desenvolvimento, criação e leitura de arquivos, testes, diagnóstico, Git e operação local. A implementação atual oferece somente a ferramenta de baixo nível `termux_exec`; não presumir a existência de ferramentas de projeto, arquivo ou Git com nomes específicos.
+
+Conduzir o trabalho em um ciclo verificável:
+
+```text
+objetivo → planejar → executar → observar → interpretar → corrigir → testar → validar
+```
+
+Antes de cada operação, consultar o estado real do Termux quando isso for relevante. Usar os resultados devolvidos por `stdout`, `stderr`, `exit_code` e `timed_out` para escolher o próximo passo. Começar por leituras e testes não destrutivos. Para instalação, alteração de arquivos, publicação, commit, exclusão ou qualquer operação potencialmente irreversível, explicar o impacto e obter autorização clara antes de executar.
+
+O projeto ainda não possui uma camada de política/autorização implementada no servidor além do Bearer token e das regras de operação da conversa. Não afirmar que existe bloqueio automático para comandos destrutivos ou acesso a credenciais. Nunca ler, expor ou versionar tokens, chaves, credenciais ou saídas sensíveis.
+
 ## Depois que a ponte estiver conectada
 
 Somente após a validação MCP, pergunte ou confirme que o usuário deseja preparar o tradutor. Quando autorizado, use `termux_exec` para verificar o ambiente e conduzir a instalação em passos pequenos. O instalador da Etapa 2 é:

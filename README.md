@@ -72,6 +72,29 @@ Verifique meu diretório HOME do Termux e liste os arquivos e diretórios que es
 
 A IA deve usar a ferramenta existente `termux_exec` com uma operação de leitura equivalente a `pwd` e à listagem do diretório HOME. O resultado esperado é o caminho HOME do Termux e uma listagem dos arquivos e diretórios encontrados, sem alteração no ambiente. Se a IA não conseguir descobrir `termux_exec`, verificar a URL `/mcp`, o header Bearer, o processo `start.sh`, o terminal aberto e a validade da URL temporária.
 
+### A ponte como infraestrutura de atuação
+
+A ponte MCP funciona como um canal operacional entre a conversa e o ambiente local. Em vez de apenas responder com trechos de código para o usuário copiar, uma IA compatível pode, quando autorizada, trabalhar em um ciclo de engenharia dentro do Termux:
+
+```text
+objetivo → planejar → executar → observar o resultado
+        → interpretar erros → corrigir → testar novamente → validar
+```
+
+Esse ciclo pode apoiar o desenvolvimento, os testes, o diagnóstico e a operação de projetos que já existam no Termux. O tradutor é apenas uma aplicação possível sobre essa infraestrutura; a ponte não depende do pipeline de áudio, Whisper ou tradução.
+
+No estado atual, a única ferramenta MCP de execução é `termux_exec`. Ela recebe um comando Bash e um timeout opcional entre 1 e 300 segundos, executa o comando no shell do Termux e devolve `stdout`, `stderr`, `exit_code` e `timed_out`. Os nomes de ferramentas de nível superior, como operações específicas de projeto, arquivo ou Git, são apenas possibilidades futuras e **não fazem parte da implementação atual**.
+
+Por isso, a IA deve tratar a ferramenta atual como um executor de baixo nível e seguir estas regras:
+
+- consultar o estado antes de alterar o ambiente;
+- preferir operações de leitura e testes não destrutivos no diagnóstico inicial;
+- explicar o próximo comando e solicitar autorização quando a operação modificar arquivos, instalar dependências, publicar alterações ou puder causar perda de dados;
+- usar os resultados reais do Termux para decidir o próximo passo, sem presumir que uma instalação ou teste foi bem-sucedido;
+- não acessar, expor ou versionar credenciais, tokens, chaves e arquivos sensíveis.
+
+A evolução natural do projeto é adicionar uma camada explícita de política entre o MCP e o executor, com escopos de autorização e confirmações para operações sensíveis. Essa camada ainda não está implementada; até lá, a segurança depende da autenticação Bearer, do uso do próprio endpoint pelo usuário e da autorização explícita na conversa.
+
 ## Comece pela Etapa 1 — Ponte MCP
 
 A ponte permite que a IA conectada ao seu servidor:

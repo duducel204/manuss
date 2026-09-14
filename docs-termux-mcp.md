@@ -1,6 +1,6 @@
-# Ponte MCP pessoal entre o Manus e o Termux
+# Ponte MCP pessoal entre uma IA compatível e o Termux
 
-Esta ponte permite que o Manus execute comandos no seu próprio Termux. O servidor roda no Android e um Cloudflare Quick Tunnel cria temporariamente o caminho HTTPS até ele. Não é necessário criar domínio, configurar painel ou instalar o SDK MCP.
+Esta ponte permite que uma IA compatível com MCP execute comandos no próprio Termux do usuário. O servidor roda no Android e um Cloudflare Quick Tunnel cria temporariamente o caminho HTTPS até ele. Não é necessário criar domínio, configurar painel ou instalar o SDK MCP. O tradutor é apenas um dos projetos que podem usar essa infraestrutura.
 
 ## Instalação simples
 
@@ -28,13 +28,13 @@ Depois da instalação, execute:
 O comando inicia o servidor MCP e o Quick Tunnel automaticamente. Após alguns segundos, ele exibirá algo parecido com:
 
 ```text
-URL para o Manus: https://nome-aleatorio.trycloudflare.com/mcp
+URL MCP: https://nome-aleatorio.trycloudflare.com/mcp
 Header: Authorization: Bearer SEU_TOKEN
 ```
 
 Mantenha esse terminal aberto. Pressionar `Ctrl+C` encerra o servidor e o túnel.
 
-## Cadastrar no Manus
+## Cadastrar na IA compatível
 
 Use a URL exibida pelo comando, incluindo `/mcp`:
 
@@ -48,11 +48,11 @@ Adicione o header HTTP:
 Authorization: Bearer SEU_TOKEN
 ```
 
-A URL muda quando o processo é encerrado ou reiniciado. Por isso, o Quick Tunnel é a opção mais simples para começar, mas não é uma URL permanente.
+A URL muda quando o processo é encerrado ou reiniciado. Por isso, o Quick Tunnel é a opção mais simples para começar, mas não é uma URL permanente. O cliente de IA precisa aceitar MCP remoto por HTTP e headers de autenticação; o local exato do cadastro depende do cliente.
 
 ## Uso
 
-Na conversa do Manus, solicite explicitamente:
+Na conversa da IA conectada, solicite explicitamente:
 
 > Execute no meu Termux: `pwd && git status --short`
 
