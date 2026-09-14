@@ -1,0 +1,79 @@
+name: Auto Create Pull Request
+
+on:
+  push:
+    branches:
+      - ci/simular-instalacao-limpa
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create_pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create PR if missing
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const head = context.ref.replace('refs/heads/', '');
+            const base = 'main';
+            const title = 'Simular instalação limpa (CI): validações não-destrutivas e checklist manual';
+            const body = `Resumo
+- Adiciona um workflow GitHub Actions que simula, de forma não-destrutiva, a experiência de um usuário novo em um ambiente limpo (runner Ubuntu).
+- Inclui um script de simulação que checa presença de arquivos essenciais, sintaxe dos scripts shell e ausência de artefatos grandes versionados.
+- Objetivo: detectar erros óbvios (sintaxe, arquivos faltando, arquivos indevidos no repo) antes de pedir que alguém execute testes reais no Termux/Android.
+
+Arquivos adicionados
+- .github/workflows/simular-instalacao.yml
+- scripts/simulate_fresh_install.sh
+- .github/PULL_REQUEST_TEMPLATE.md
+
+O que o CI faz
+- checkout do repositório
+- bash -n em termux/*.sh e scripts/*.sh (checagem de sintaxe)
+- instala e executa shellcheck se disponível no runner
+- executa scripts/simulate_fresh_install.sh, que gera simulate-report.txt (subido como artefato)
+- sinaliza OK / WARNING / BLOCKER via código de saída
+
+Limitações importantes
+- Não executa comandos Termux (termux-microphone-record, compilação de whisper.cpp, etc.). O runner CI é Ubuntu e não simula Android.
+- Testes de microfone, gravação e compilação do whisper.cpp devem ser feitos manualmente em um dispositivo Termux/Android; o PR inclui um template com checklist manual para isso.
+
+Como executar / verificar
+1. Abra o PR (base: main, head: ci/simular-instalacao-limpa). O workflow roda no push ou via "Run workflow" (workflow_dispatch).
+2. Após execução, baixe o artefato simulate-report (aba "Artifacts" da execução) e revise:
+   - BLOCKERS: impedem a mesclagem até correção
+   - AVISOS: itens a revisar manualmente
+3. Se houver BLOCKERS, corrigir e commitar na branch ci/simular-instalacao-limpa; o workflow rerodará.
+4. Se estiver satisfeito com o relatório (0 BLOCKERS), mesclar.
+
+Checklist manual (a executar no Termux / Android)
+- [ ] Instalar Termux e Termux:API pela mesma origem
+- [ ] Colar comando de bootstrap do README e executar
+- [ ] Conceder permissão de microfone ao Termux
+- [ ] Executar SSSystem / wizard:
+  - [ ] Gravar áudio real ~8s com termux-microphone-record -l 0 e terminar com -q
+  - [ ] Validar duração com ffprobe
+  - [ ] Transcrever o último áudio e confirmar texto em português
+- [ ] Registrar resultados no STATUS.md e marcar CHECKLIST.md
+- [ ] Tentar um teste de tradução offline (documentar sucesso/falha)
+`;
+
+            // Check for existing open PRs from this head to base
+            const { data: prs } = await github.rest.pulls.list({ owner, repo, head: `${owner}:${head}`, base, state: 'open' });
+            if (prs.length > 0) {
+              console.log(`PR already exists: ${prs[0].html_url}`);
+              return { pr_url: prs[0].html_url };
+            }
+
+            // Create PR
+            const { data: pr } = await github.rest.pulls.create({ owner, repo, title, head, base, body });
+            console.log(`Created PR: ${pr.html_url}`);
+            return { pr_url: pr.html_url };
