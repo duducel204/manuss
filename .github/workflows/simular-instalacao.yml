@@ -1,0 +1,56 @@
+name: Simular instalação limpa
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - ci/simular-instalacao-limpa
+
+jobs:
+  simulate-clean-install:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verificar sintaxe de scripts shell
+        run: |
+          shopt -s nullglob || true
+          files=(termux/*.sh scripts/*.sh)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "Aviso: nenhum script encontrado em termux/ ou scripts/"
+          fi
+          rc=0
+          for f in "${files[@]}"; do
+            echo "Checando sintaxe: $f"
+            if ! bash -n "$f"; then
+              echo "ERRO: sintaxe inválida em $f"
+              rc=1
+            fi
+          done
+          exit $rc
+
+      - name: Instalar shellcheck
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y shellcheck || true
+
+      - name: Rodar shellcheck (se disponível)
+        run: |
+          if command -v shellcheck >/dev/null 2>&1; then
+            shellcheck termux/*.sh || true
+            shellcheck scripts/*.sh || true
+          else
+            echo "shellcheck não disponível, pulando."
+          fi
+
+      - name: Executar simulação de instalação limpa
+        run: |
+          chmod +x scripts/simulate_fresh_install.sh || true
+          ./scripts/simulate_fresh_install.sh | tee simulate_report.txt
+
+      - name: Anexar relatório
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulate-report
+          path: simulate_report.txt
