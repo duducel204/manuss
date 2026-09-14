@@ -8,7 +8,7 @@ O computador não precisa ter Git, Python ou o repositório clonado. Abra o **Wi
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass -Force
-irm https://raw.githubusercontent.com/duducel204/manuss/2c6d954/windows/bootstrap_mcp_pinned.ps1 | iex
+irm https://raw.githubusercontent.com/duducel204/manuss/bbdccbb13da195ee33743a1618842b022b4baeba/windows/bootstrap_mcp_pinned.ps1 | iex
 ```
 
 Use o comando exatamente como mostrado, sem texto adicional na mesma linha. A versão `pinned` usa referências imutáveis aos arquivos publicados e é recomendada para a primeira instalação. Depois que o cache do GitHub estiver atualizado, a versão pelo branch `main` também poderá ser usada:
