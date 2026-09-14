@@ -1,0 +1,6 @@
+{
+  "name": "Termux MCP Bridge",
+  "description": "Full-stack interface connecting Gemini to a remote Termux MCP personal bridge with command confirmation, diagnostics, and real-time execution outputs.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
