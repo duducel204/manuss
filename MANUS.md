@@ -1,5 +1,116 @@
 # Instruções para o Manus
 
-Quando o usuário quiser conectar o Manus ao próprio Termux, use a habilidade `termux-mcp-bridge` se ela estiver instalada e leia [`docs/MANUS_TERMUX_MCP.md`](docs/MANUS_TERMUX_MCP.md). O procedimento padrão é instalar `termux/setup_mcp.sh`, iniciar `~/tradutor-local/mcp/start.sh`, cadastrar a URL temporária `/mcp` com o Bearer token do próprio usuário e validar `termux_exec` com um comando inofensivo.
+## Princípio obrigatório
 
-Cada usuário deve ter seu próprio servidor, token, túnel e conector. Nunca reutilize credenciais de logs, screenshots, commits ou outro usuário. Não trate a URL `trycloudflare.com` como permanente. Execute comandos no Termux somente depois de solicitação explícita do usuário e não versiona tokens, logs ou saídas privadas.
+Trate este repositório como um fluxo em duas partes:
+
+1. **Etapa 1 — Ponte MCP pessoal:** conectar a inteligência artificial ao Termux do próprio usuário.
+2. **Etapa 2 — Tradutor local:** preparar e operar captura, transcrição e tradução depois que a conexão MCP estiver validada.
+
+A Etapa 1 é um pré-requisito obrigatório. Não conduza a instalação do Whisper ou do tradutor como primeiro passo quando a ponte ainda não estiver conectada.
+
+## Quando o usuário iniciar
+
+Se o usuário quiser usar o repositório, explique primeiro que a ponte MCP é a fundação do projeto. Oriente-o a instalar o Termux e, se for usar áudio, o Termux:API pela mesma origem. Em seguida, forneça exatamente este comando no Termux:
+
+```bash
+curl -fsSL --retry 3 \
+  https://raw.githubusercontent.com/duducel204/manuss/main/termux/bootstrap_mcp.sh \
+  | bash
+```
+
+Esse comando instala somente a ponte MCP. Não instale o tradutor nesse momento.
+
+Depois, oriente o usuário a executar:
+
+```bash
+~/tradutor-local/mcp/start.sh
+```
+
+Peça que ele forneça o retorno contendo:
+
+```text
+URL MCP: https://<nome>.trycloudflare.com/mcp
+Header: Authorization: Bearer <token>
+```
+
+Nunca invente URL ou token e nunca reutilize credenciais de outro usuário. Não peça que o usuário publique o token no GitHub ou em mensagens públicas.
+
+## Cadastro do servidor MCP no Manus
+
+Antes de criar ou atualizar um conector, inspecione a configuração disponível:
+
+```bash
+manus-config config load --search mcp
+```
+
+Se o conector ainda não existir, crie um rascunho usando a URL e o token reais fornecidos pelo usuário. A configuração deve conter:
+
+```json
+{
+  "mode": "form",
+  "name": "Termux pessoal",
+  "mcpServers": {
+    "termux-pessoal": {
+      "url": "https://<nome>.trycloudflare.com/mcp",
+      "headers": {
+        "Authorization": "Bearer <token-do-usuario>"
+      }
+    }
+  },
+  "note": "Ponte MCP pessoal para executar comandos explicitamente solicitados no Termux do próprio usuário."
+}
+```
+
+Não coloque o token em arquivos versionados. Siga o fluxo de configuração de conectores do ambiente e aguarde a confirmação exigida para criar o conector. Depois, liste as ferramentas e valide com um comando inofensivo:
+
+```bash
+manus-mcp-cli tool list --server "Termux pessoal"
+manus-mcp-cli tool call termux_exec \
+  --server "Termux pessoal" \
+  --input '{"command":"echo MCP conectado && pwd"}'
+```
+
+Considere a Etapa 1 concluída somente quando `termux_exec` estiver disponível e retornar `exit_code: 0`.
+
+## Depois que a ponte estiver conectada
+
+Somente após a validação MCP, pergunte ou confirme que o usuário deseja preparar o tradutor. Quando autorizado, use `termux_exec` para verificar o ambiente e conduzir a instalação em passos pequenos. O instalador da Etapa 2 é:
+
+```bash
+curl -fL --retry 3 \
+  https://raw.githubusercontent.com/duducel204/manuss/main/termux/bootstrap.sh \
+  | bash
+```
+
+Depois, use `SSSystem` para status, Whisper, gravação e transcrição. Preserve o Whisper já funcional. A tradução offline ainda não está validada e não deve ser apresentada como concluída.
+
+## Regras de operação
+
+- Execute comandos no Termux somente quando o usuário os solicitar explicitamente ou autorizar claramente a etapa atual.
+- Não transforme uma sugestão anterior em autorização para ações destrutivas, envio de dados ou mudanças de segurança.
+- Não versionar tokens, URLs temporárias, logs, áudios, modelos ou credenciais.
+- Explique que o Cloudflare Quick Tunnel é temporário e que a URL pode mudar após reiniciar a ponte.
+- A ponte MCP é um padrão HTTP/JSON-RPC; ela não é exclusiva do Manus. Outros clientes de IA que suportem MCP remoto podem usar a mesma URL e header, mas o cadastro deve seguir o procedimento do cliente escolhido.
+- Se o usuário escolher outra IA, não tente criar um conector Manus; entregue a URL `/mcp`, o header Bearer e a descrição da ferramenta `termux_exec` para o mecanismo de configuração dessa IA.
+- Não exponha o endpoint a terceiros nem reutilize o token de outra pessoa.
+
+## Diagnóstico rápido
+
+Se a ponte não conectar, conferir nesta ordem:
+
+1. O comando foi executado dentro do Termux.
+2. `~/tradutor-local/mcp/start.sh` continua em execução.
+3. A URL cadastrada termina em `/mcp`.
+4. O header usa exatamente `Authorization: Bearer <token>`.
+5. O terminal do Termux continua aberto.
+6. A URL do Quick Tunnel não mudou.
+
+A ponte deve usar o servidor Python baseado na biblioteca padrão. Não instalar o SDK Python MCP, `uvicorn`, `rpds-py`, `maturin` ou Rust como parte deste onboarding.
+
+## Referências
+
+- [`README.md`](README.md) — guia do usuário em duas etapas.
+- [`docs/MANUS_TERMUX_MCP.md`](docs/MANUS_TERMUX_MCP.md) — detalhes do onboarding MCP.
+- [`termux/bootstrap_mcp.sh`](termux/bootstrap_mcp.sh) — comando atômico da Etapa 1.
+- [`termux/setup_mcp.sh`](termux/setup_mcp.sh) — instalador executado pelo bootstrap.
